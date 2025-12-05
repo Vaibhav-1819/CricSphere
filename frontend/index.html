@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Primary favicon (put favicon.ico in public/) -->
+    <link rel="icon" href="/favicon.ico" />
+
+    <!-- PNG favicons for modern browsers (place in public/) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <!-- Apple / iOS -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Manifest for PWA (optional — place site.webmanifest in public/ if used) -->
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- SEO / Social -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="CricSphere — Intelligent cricket analytics: live scores, player & team stats, CSV-driven leaderboards and Match Impact Score (MIS)." />
+    <meta name="theme-color" content="#0ea5a5" />
+
+    <!-- Open Graph (for sharing previews) -->
+    <meta property="og:title" content="CricSphere — Cricket Analytics" />
+    <meta property="og:description" content="Explore player stats, team rankings, MIS analytics and live scoreboards — powered by CSV datasets and modern web tech." />
+    <meta property="og:image" content="/cricsphere-logo.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="/" />
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="CricSphere — Cricket Analytics" />
+    <meta name="twitter:description" content="Live scores, CSV-powered leaderboards, and Match Impact Score (MIS) analytics for cricket fans and analysts." />
+    <meta name="twitter:image" content="/cricsphere-logo.png" />
+
+    <title>CricSphere — Intelligent cricket analytics</title>
+    <!-- Optional: preload the main logo for faster initial paint (logo under src/assets referenced via Vite) -->
+    <!-- If you placed the logo in public/ use /cricsphere-logo.png; otherwise import it in JS. -->
+    <link rel="preload" href="/cricsphere-logo.png" as="image" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
