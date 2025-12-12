@@ -1,139 +1,115 @@
-CricSphere - The Ultimate Cricket Destination
+# 🏏 CricSphere – The Ultimate Cricket Destination
 
-CricSphere is a modern, full-stack cricket information platform built to provide a seamless, real-time experience for cricket fans. It delivers live scores, match schedules, detailed player statistics, and the latest news, all wrapped in a sleek, responsive Single Page Application (SPA).
+![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.6-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![React](https://img.shields.io/badge/React-Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Active_Development-brightgreen?style=for-the-badge)
 
-Beyond basic data display, CricSphere features a secure authentication system and an integrated Match Impact Score (MIS) algorithm—a custom analytical tool that ranks players based on their true impact on a game.
+**CricSphere** is a modern, full-stack cricket analytics and information platform crafted to deliver a seamless, real-time experience for cricket fans. It offers **live scores**, **series schedules**, **player statistics**, **team details**, powerful **data analytics**, and a custom **Match Impact Score (MIS)** ranking model — all within a sleek, mobile-first, responsive Single Page Application (SPA).
 
-🚀 Key Features
+---
 
-Live Score Dashboard: Real-time updates of ongoing matches fetched from external APIs.
+## 🚀 Key Features
 
-Comprehensive Data: Detailed lists of upcoming series, team squads with dynamic country flags, and player statistics.
+### 🏏 Live Score Dashboard
+- Provides real-time score updates retrieved from external cricket data APIs.  
+- Displays match status, team performance, run rates, partnerships, and quick score insights.  
+- Auto-refreshing panels ensure a smooth, uninterrupted live viewing experience.
 
-Match Impact Score (MIS): A custom analytical algorithm that calculates a player's impact rating based on weighted performance metrics (Strike Rate, Economy, Wickets).
+---
 
-Secure Authentication: Full user registration and login system secured with Spring Security and JWT (JSON Web Tokens).
+### 📅 Complete Cricket Ecosystem
+- Upcoming series schedules, tours, and match lists.  
+- Team squads with dynamically rendered **country flags**.  
+- Individual player pages showing career statistics and performance metrics.  
 
-User Personalization: Protected user profile pages accessible only after secure login.
+---
 
-Modern UI/UX: Responsive design using Tailwind CSS, smooth animations with Framer Motion, and a system-wide Dark Mode.
+## 🔒 Security Architecture
 
-🛠️ Tech Stack
+CricSphere uses a **fully stateless, token-based authentication system** built around JWT.
 
-Backend
+### Authentication Flow
+- Users authenticate through secure credentials.  
+- Spring Security validates identity using BCrypt hashing.  
+- Upon successful login, users receive a **signed JWT** containing role & user details.  
+- The frontend stores the JWT and attaches it to all protected API requests.
 
-Java 17
+### Authorization Model
+- Role-Based Access Control (RBAC) implemented across all sensitive endpoints.  
+- Token validation ensures only authenticated users can access personalized pages.  
+- Built-in protection against CSRF, unauthorized access, and token tampering.
 
-Spring Boot 3.5.6 (REST APIs, Dependency Injection)
+This design ensures a highly secure, scalable, and sessionless architecture ideal for modern SPAs.
 
-Spring Security (Authentication & Authorization)
+---
 
-JWT (jjwt) (Stateless Security Token)
+## 🎨 Modern UI/UX
 
-MySQL (Relational Database)
+The frontend is built with a strong focus on **speed**, **responsiveness**, and **visual clarity**.
 
-Spring Data JPA (ORM/Persistence)
+### Design Highlights
+- **Tailwind CSS** provides a flexible utility-first styling system.  
+- **Framer Motion** adds smooth transitions, page animations, and UI interactions.  
+- Fully responsive layout for mobile, tablet, and desktop viewing.  
+- **Dark Mode** with system-level preference detection.  
+- Toast-based notifications for seamless user interactions.
 
-RestTemplate (External API Consumption)
+---
 
-Frontend
+## ⚙️ Technology Stack
 
-React.js (Vite Build Tool)
+### 🧩 Backend Technologies
+- **Java 17**  
+- **Spring Boot 3.5.6** (REST APIs, DI, validation)  
+- **Spring Security + JWT** (Authentication & Authorization)  
+- **MySQL** (Primary relational database)  
+- **Spring Data JPA** (ORM & Repository layer)  
+- **RestTemplate** (External API communication)
 
-Tailwind CSS (Utility-first Styling)
+---
 
-React Router DOM (Client-side Routing)
+### 🧩 Frontend Technologies
+- **React.js (Vite)** – Fast SPA architecture  
+- **Tailwind CSS** – Scalable UI design  
+- **React Router DOM** – Client-side routing  
+- **Axios** – REST API communication  
+- **Framer Motion** – Elegant animations  
+- **React Hot Toast** – Non-intrusive notifications  
 
-Framer Motion (Animations)
+---
 
-Axios (HTTP Client)
+## 🖼️ Application Screenshots
 
-React Hot Toast (Notifications)
+### Home & Live Score Views
+| Homepage | Live Dashboard |
+|:---:|:---:|
+| ![](https://via.placeholder.com/400x200?text=Homepage+Screenshot) | ![](https://via.placeholder.com/400x200?text=Live+Score+Screenshot) |
 
-⚙️ Installation & Setup
+### Player Analytics & Authentication
+| Player Stats | Login Page |
+|:---:|:---:|
+| ![](https://via.placeholder.com/400x200?text=Player+Stats+Screenshot) | ![](https://via.placeholder.com/400x200?text=Login+Page+Screenshot) |
 
-Prerequisites
+> Replace placeholder images with actual project screenshots when available.
 
-Java JDK 17+
+---
 
-Node.js & npm
+## 📝 Purpose & Scope
 
-MySQL Server
+CricSphere is designed as part of a **Java Full Stack Development curriculum**, serving both as a learning platform and as a real-world project implementation of:
 
-1. Database Setup
+- REST API development  
+- Authentication systems  
+- Analytical scoring algorithms  
+- State management  
+- Modern SPA development  
+- Secure, scalable architecture  
 
-Open your MySQL client (Workbench or Command Line).
+Its goal is to provide an interactive, analytics-driven cricket experience.
 
-Create the database:
+---
 
-CREATE DATABASE cricsphere_db;
-
-
-The application will automatically create the required tables (users, etc.) on the first run.
-
-2. Backend Setup (Spring Boot)
-
-Navigate to the backend directory.
-
-Open src/main/resources/application.properties and configure your database credentials:
-
-spring.datasource.username=root
-spring.datasource.password=YOUR_PASSWORD
-
-
-Add your JWT Secret and Expiration:
-
-jwt.secret=YourSuperSecretKey...
-jwt.expiration=86400000
-
-
-Run the application:
-
-mvn spring-boot:run
-
-
-The server will start on http://localhost:8081.
-
-3. Frontend Setup (React)
-
-Navigate to the frontend directory.
-
-Install dependencies:
-
-npm install
-
-
-Start the development server:
-
-npm run dev
-
-
-The app will be available at http://localhost:5173.
-
-🔒 Security Architecture
-
-CricSphere uses a stateless security model:
-
-Login: User sends credentials to /api/v1/auth/login.
-
-Validation: Server verifies hash via BCrypt.
-
-Token: Server issues a signed JWT.
-
-Storage: Client stores JWT in localStorage.
-
-Access: Client attaches the token (Authorization: Bearer <token>) for protected routes like /profile.
-
-📊 Match Impact Score (MIS) Algorithm
-
-The MIS is a heuristic model derived from linear regression principles to quantify player value.
-
-Formula Concept:
-
-Score = (Runs * 0.5) + (Wickets * 25) + (Strike Rate Bonus) + (Economy Bonus)
-
-This logic is implemented to dynamically rank players on the Stats page, providing a unique analytical perspective.
-
-📝 License
-
-This project is developed for educational purposes as part of the Java Full Stack Development curriculum.
+<p align="center">Made with ❤️ by the CricSphere Team</p>
