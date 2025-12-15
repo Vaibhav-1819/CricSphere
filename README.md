@@ -6,110 +6,165 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Active_Development-brightgreen?style=for-the-badge)
+![License](https://img.shields.io/badge/License-Restricted-red?style=for-the-badge)
 
-**CricSphere** is a modern, full-stack cricket analytics and information platform crafted to deliver a seamless, real-time experience for cricket fans. It offers **live scores**, **series schedules**, **player statistics**, **team details**, powerful **data analytics**, and a custom **Match Impact Score (MIS)** ranking model — all within a sleek, mobile-first, responsive Single Page Application (SPA).
+**CricSphere** is a modern, full-stack cricket analytics and information platform built to deliver a seamless, real-time experience for cricket fans. It provides **live scores**, **match schedules**, **team & player analytics**, **ICC rankings**, and a custom **Match Impact Score (MIS)** model — all inside a fast, responsive Single Page Application (SPA).
+
+> ⚠️ **Project Notice**  
+> This project is protected under a **restricted license**.  
+> Unauthorized copying, redistribution, or commercial usage is **strictly prohibited**.
 
 ---
 
 ## 🚀 Key Features
 
 ### 🏏 Live Score Dashboard
-- Provides real-time score updates retrieved from external cricket data APIs.  
-- Displays match status, team performance, run rates, partnerships, and quick score insights.  
-- Auto-refreshing panels ensure a smooth, uninterrupted live viewing experience.
-
----
+- Real-time match updates using external cricket data APIs  
+- Live match status, run rates, partnerships, and score insights  
+- Auto-refreshing UI for uninterrupted match tracking  
 
 ### 📅 Complete Cricket Ecosystem
-- Upcoming series schedules, tours, and match lists.  
-- Team squads with dynamically rendered **country flags**.  
-- Individual player pages showing career statistics and performance metrics.  
+- Upcoming series, tours, and match schedules  
+- World teams with dynamically rendered country flags  
+- Player profiles with career statistics and performance metrics  
+
+### 📊 Advanced Analytics
+- Custom **Match Impact Score (MIS)** ranking model  
+- Player form graphs & ranking movement indicators  
+- Team comparison and historical performance analysis  
 
 ---
 
 ## 🔒 Security Architecture
 
-CricSphere uses a **fully stateless, token-based authentication system** built around JWT.
+CricSphere follows a **stateless, token-based authentication architecture** using **JWT**.
 
 ### Authentication Flow
-- Users authenticate through secure credentials.  
-- Spring Security validates identity using BCrypt hashing.  
-- Upon successful login, users receive a **signed JWT** containing role & user details.  
-- The frontend stores the JWT and attaches it to all protected API requests.
+1. User logs in with secure credentials  
+2. Passwords are hashed using **BCrypt**  
+3. Backend issues a signed **JWT** on success  
+4. JWT is attached to all protected API requests  
 
 ### Authorization Model
-- Role-Based Access Control (RBAC) implemented across all sensitive endpoints.  
-- Token validation ensures only authenticated users can access personalized pages.  
-- Built-in protection against CSRF, unauthorized access, and token tampering.
+- Role-Based Access Control (RBAC)  
+- Spring Security filters for token validation  
+- Protection against CSRF, token tampering, and unauthorized access  
 
-This design ensures a highly secure, scalable, and sessionless architecture ideal for modern SPAs.
+This architecture ensures scalability, security, and session-less operation — ideal for modern SPAs.
 
 ---
 
-## 🎨 Modern UI/UX
+## 🎨 Modern UI / UX
 
-The frontend is built with a strong focus on **speed**, **responsiveness**, and **visual clarity**.
-
-### Design Highlights
-- **Tailwind CSS** provides a flexible utility-first styling system.  
-- **Framer Motion** adds smooth transitions, page animations, and UI interactions.  
-- Fully responsive layout for mobile, tablet, and desktop viewing.  
-- **Dark Mode** with system-level preference detection.  
-- Toast-based notifications for seamless user interactions.
+- **Tailwind CSS** for clean, scalable styling  
+- **Framer Motion** for smooth animations and page transitions  
+- Fully responsive design (mobile, tablet, desktop)  
+- System-aware **Dark Mode**  
+- Toast-based notifications for seamless interactions  
 
 ---
 
 ## ⚙️ Technology Stack
 
-### 🧩 Backend Technologies
-- **Java 17**  
-- **Spring Boot 3.5.6** (REST APIs, DI, validation)  
-- **Spring Security + JWT** (Authentication & Authorization)  
-- **MySQL** (Primary relational database)  
-- **Spring Data JPA** (ORM & Repository layer)  
-- **RestTemplate** (External API communication)
+### 🧩 Backend
+- Java 17  
+- Spring Boot 3.5.6  
+- Spring Security + JWT  
+- Spring Data JPA  
+- MySQL  
+- RestTemplate (external API communication)  
 
----
-
-### 🧩 Frontend Technologies
-- **React.js (Vite)** – Fast SPA architecture  
-- **Tailwind CSS** – Scalable UI design  
-- **React Router DOM** – Client-side routing  
-- **Axios** – REST API communication  
-- **Framer Motion** – Elegant animations  
-- **React Hot Toast** – Non-intrusive notifications  
+### 🧩 Frontend
+- React (Vite)  
+- Tailwind CSS  
+- React Router DOM  
+- Axios  
+- Framer Motion  
+- React Hot Toast  
 
 ---
 
 ## 🖼️ Application Screenshots
 
-### Home & Live Score Views
-| Homepage | Live Dashboard |
-|:---:|:---:|
-| ![](https://via.placeholder.com/400x200?text=Homepage+Screenshot) | ![](https://via.placeholder.com/400x200?text=Live+Score+Screenshot) |
+> 📌 Place your screenshots inside a `screenshots/` folder in the root directory.
 
-### Player Analytics & Authentication
-| Player Stats | Login Page |
-|:---:|:---:|
-| ![](https://via.placeholder.com/400x200?text=Player+Stats+Screenshot) | ![](https://via.placeholder.com/400x200?text=Login+Page+Screenshot) |
+### 🏠 Home & Live Match Center
+![Home Page](screenshots/home.png)
+![Live Match Center](screenshots/live-match-center.png)
 
-> Replace placeholder images with actual project screenshots when available.
+### 🌍 Teams & Rankings
+![World Teams](screenshots/world-teams.png)
+![ICC Rankings](screenshots/icc-rankings.png)
+
+### 🔐 Authentication
+![Login Page](screenshots/login.png)
+![Register Page](screenshots/register.png)
+
+---
+
+## 🛡️ Project Protection & Usage Policy
+
+This project is intentionally protected to prevent misuse or plagiarism.
+
+### You MAY:
+- View and study the code for **educational purposes**
+- Take **conceptual inspiration** with proper attribution
+
+### You MAY NOT:
+- Copy or redistribute the source code  
+- Use the UI or logic for commercial purposes  
+- Publish cloned or modified versions publicly  
+- Claim this project as your own work  
+
+📩 For collaboration, academic submissions, or commercial licensing, **explicit permission is required**.
+
+---
+
+## 📄 License
+
+### CricSphere – Restricted Educational License
+
+Copyright © 2025  
+**Bharathula Venkata Vaibhav Ram**
+
+This project, **CricSphere**, is protected under a **Restricted Educational License**.
+
+Permission is granted to **view, study, and reference** this project **solely for educational and learning purposes**.
+
+### ✅ You ARE allowed to:
+- Explore the codebase for academic understanding  
+- Learn from the architecture, design patterns, and workflows  
+- Reference concepts with proper attribution  
+
+### ❌ You are NOT allowed to:
+- Copy, clone, or redistribute the source code (in part or full)  
+- Use this project or its UI for commercial or production purposes  
+- Publish modified or unmodified versions publicly  
+- Claim this project as your own work or remove attribution  
+
+Any unauthorized use, reproduction, or distribution may result in
+**takedown requests or legal action**.
+
+For collaboration, academic reuse, or commercial licensing,  
+**explicit written permission from the author is required**.
+
 
 ---
 
 ## 📝 Purpose & Scope
 
-CricSphere is designed as part of a **Java Full Stack Development curriculum**, serving both as a learning platform and as a real-world project implementation of:
+CricSphere is developed as part of a **Java Full Stack Development curriculum**, demonstrating:
 
-- REST API development  
-- Authentication systems  
-- Analytical scoring algorithms  
-- State management  
-- Modern SPA development  
-- Secure, scalable architecture  
+- Secure REST API development  
+- JWT-based authentication systems  
+- Custom analytics algorithms  
+- Scalable SPA architecture  
+- Professional-grade UI/UX design  
 
-Its goal is to provide an interactive, analytics-driven cricket experience.
+This project bridges **academic learning** with **real-world engineering practices**.
 
 ---
 
-<p align="center">Made with ❤️ by the CricSphere Team</p>
+<p align="center">
+  Made with ❤️ by <strong>Bharathula Venkata Vaibhav Ram</strong>
+</p>
