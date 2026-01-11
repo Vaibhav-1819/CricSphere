@@ -11,7 +11,7 @@ import {
   Target
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-+ import { getCurrentMatches } from "../api/cricketApi";
+import { getCurrentMatches } from "../api/cricketApi";
 
 /* ---------------- MATCH STATE HELPERS ---------------- */
 
