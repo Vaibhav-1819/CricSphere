@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import logo from "../assets/cricsphere-logo.png";
+import { getCurrentMatches } from "../api/cricketApi";
+
 
 /* ---------- CountUp ---------- */
 const CountUp = ({ to = 0, duration = 900, suffix = "" }) => {
@@ -55,22 +57,22 @@ export default function IntroSection() {
   /* ---------- Fetch Live Match ---------- */
   useEffect(() => {
     const fetchLive = async () => {
-      try {
-        const res = await fetch("http://localhost:8081/api/v1/cricket/current-matches");
-        const json = await res.json();
-        const matches = json?.data || [];
+  try {
+    const res = await getCurrentMatches();
+    const matches = res.data?.data || [];
 
-        const live = matches.find(m =>
-          !["won", "draw", "tie", "abandon", "result"].some(k =>
-            m.status?.toLowerCase().includes(k)
-          )
-        );
+    const live = matches.find(m =>
+      !["won", "draw", "tie", "abandon", "result"].some(k =>
+        m.status?.toLowerCase().includes(k)
+      )
+    );
 
-        setLiveMatch(live || matches[0]);
-      } catch (e) {
-        console.error("Failed to load live match", e);
-      }
-    };
+    setLiveMatch(live || matches[0] || null);
+  } catch (e) {
+    console.error("Failed to load live match", e);
+  }
+};
+
 
     fetchLive();
     const i = setInterval(fetchLive, 30000);
