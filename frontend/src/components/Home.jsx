@@ -164,7 +164,7 @@ const Home = () => {
   useEffect(() => {
     getCurrentMatches()
       .then((res) => {
-        setMatchesData(res.data);
+        setMatchesData(res.data.data); // ← correct mapping
       })
       .catch((err) => console.error("API error:", err))
       .finally(() => setMatchesLoading(false));
@@ -184,7 +184,7 @@ const Home = () => {
   return (
     <>
       <TrendingBar />
-      <LiveStrip rawMatches={matchesData?.data} loading={matchesLoading} />
+      <LiveStrip rawMatches={matchesData} loading={matchesLoading} />
     </>
   );
 };
