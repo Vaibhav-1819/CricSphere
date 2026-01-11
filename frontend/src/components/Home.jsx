@@ -6,7 +6,7 @@ import {
   Crown, CheckCircle2, ShieldCheck, Activity
 } from 'lucide-react';
 import { getCurrentMatches } from "../api/cricketApi";
-import { useEffect, useState } from "react";
+
 
 
 /* --- 1. ACCURACY ENGINES --- */
