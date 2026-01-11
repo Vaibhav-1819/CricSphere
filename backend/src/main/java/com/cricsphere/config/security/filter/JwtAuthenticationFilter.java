@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -31,41 +33,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        
-        // 1. Get JWT from request header
-        String token = getJwtFromRequest(request);
+        try {
+            // 1. Extract JWT from the Authorization header
+            String token = getJwtFromRequest(request);
 
-        // 2. Validate token and authenticate user
-        if (StringUtils.hasText(token) && jwtUtils.validateToken(token)) {
-            
-            // Get username from token
-            String username = jwtUtils.getUsernameFromToken(token);
+            // 2. Validate token and authenticate
+            if (StringUtils.hasText(token) && jwtUtils.validateToken(token)) {
+                
+                String username = jwtUtils.getUsernameFromToken(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            // Load user details
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                UsernamePasswordAuthenticationToken authentication = 
+                    new UsernamePasswordAuthenticationToken(
+                        userDetails, 
+                        null, 
+                        userDetails.getAuthorities()
+                    );
 
-            // Authenticate user
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities()
-            );
-
-            // Set authentication details (IP address, session ID, etc.)
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            
-            // Set security context: This is where the magic happens!
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                
+                // 3. Set the Security Context
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                
+                log.debug("Successfully authenticated user: {}", username);
+            }
+        } catch (Exception e) {
+            log.error("Cannot set user authentication: {}", e.getMessage());
+            // We don't throw an exception here so that the filter chain can continue
+            // and the AuthenticationEntryPoint can handle the unauthorized response later.
         }
 
-        // Continue to the next filter in the chain (or the controller)
+        // 4. Continue to the next filter
         filterChain.doFilter(request, response);
     }
 
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        
-        // Check if the Authorization header contains the Bearer token
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // Extract the token (skipping "Bearer ")
+            return bearerToken.substring(7);
         }
         return null;
     }

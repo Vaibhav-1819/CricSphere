@@ -7,9 +7,10 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import ChatWidget from './components/ChatWidget';
 import LiveScore from './components/LiveScore'; 
+import MatchDetail from './components/MatchDetail'; // ⭐ Added MatchDetail Import
 import Schedules from './components/Schedules';
 import Teams from './components/Teams';
-import TeamDetails from './components/TeamDetails'; // <--- 1. IMPORTED HERE
+import TeamDetails from './components/TeamDetails'; 
 import Stats from './components/Stats';
 import News from './components/News';
 import LandingPage from './components/LandingPage';
@@ -47,7 +48,7 @@ const ScrollToTop = () => {
 const Layout = ({ children, toggleDarkMode, darkMode }) => (
   <div className={`min-h-screen flex flex-col transition-colors duration-500`}>
     <Header toggleDarkMode={toggleDarkMode} darkMode={darkMode} />
-    <main className="flex-grow bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-500 p-0 md:p-0 min-h-[calc(100vh-8rem)]">
+    <main className="flex-grow bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-500 min-h-[calc(100vh-8rem)]">
       <div className="w-full"> 
         {children}
       </div>
@@ -98,98 +99,76 @@ function App() {
       />
       
       <Routes>
-        {/* ROOT ROUTE */}
+        {/* ROOT & AUTH ROUTES */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/intro" element={<IntroPage />} />
-
-        {/* AUTH ROUTES */}
         <Route path="/login" element={<LoginPage />} /> 
         <Route path="/register" element={<RegisterPage />} />
         
-        {/* SUPPORT & LEGAL ROUTES */}
-        <Route path="/about" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <AboutUs />
-          </Layout>
-        } />
-        <Route path="/contact" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <Contact />
-          </Layout>
-        } />
-        <Route path="/privacy" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <PrivacyPolicy />
-          </Layout>
-        } />
-        <Route path="/terms" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <TermsOfService />
-          </Layout>
-        } />
-
-        {/* PREMIUM FEATURES */}
-        <Route path="/premium" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <PremiumFeatures />
-          </Layout>
-        } />
-
-        {/* MAIN APP ROUTES */}
-        <Route path="/profile" element={
-            <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-                <ProfilePage />
-            </Layout>
-        } />
-
+        {/* APP ROUTES WRAPPED IN LAYOUT */}
         <Route path="/home" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <Home />
-          </Layout>
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><Home /></Layout>
         } />
         
         <Route path="/live-scores" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <LiveScore />
-          </Layout>
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><LiveScore /></Layout>
         } />
-        
+
+        {/* ⭐ NEW: MATCH DETAIL ROUTE */}
+        <Route path="/match/:id" element={
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><MatchDetail /></Layout>
+        } />
+
         <Route path="/schedules" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <Schedules />
-          </Layout>
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><Schedules /></Layout>
         } />
         
         <Route path="/schedules/:seriesId" element={
-            <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-                <SeriesPage />
-            </Layout>
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><SeriesPage /></Layout>
         } />
         
-        {/* TEAMS LIST */}
         <Route path="/teams" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <Teams />
-          </Layout>
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><Teams /></Layout>
         } />
         
-        {/* --- 2. NEW TEAM DETAILS ROUTE --- */}
         <Route path="/teams/:teamId" element={
-            <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-                <TeamDetails />
-            </Layout>
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><TeamDetails /></Layout>
         } />
         
         <Route path="/stats" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <Stats />
-          </Layout>
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><Stats /></Layout>
         } />
         
         <Route path="/news" element={
-          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
-            <News />
-          </Layout>
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><News /></Layout>
+        } />
+
+        <Route path="/profile" element={
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><ProfilePage /></Layout>
+        } />
+
+        {/* SUPPORT & LEGAL */}
+        <Route path="/about" element={
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><AboutUs /></Layout>
+        } />
+        <Route path="/contact" element={
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><Contact /></Layout>
+        } />
+        <Route path="/privacy" element={
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><PrivacyPolicy /></Layout>
+        } />
+        <Route path="/terms" element={
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><TermsOfService /></Layout>
+        } />
+        <Route path="/premium" element={
+          <Layout toggleDarkMode={toggleDarkMode} darkMode={darkMode}><PremiumFeatures /></Layout>
+        } />
+
+        {/* 404 FALLBACK */}
+        <Route path="*" element={
+          <div className="h-screen flex items-center justify-center bg-slate-900 text-white">
+            <h1 className="text-2xl font-bold">404 | Page Not Found</h1>
+          </div>
         } />
       </Routes>
     </BrowserRouter>

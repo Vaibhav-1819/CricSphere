@@ -1,16 +1,18 @@
 package com.cricsphere.service;
 
 import com.cricsphere.model.*;
-import jakarta.annotation.PostConstruct; 
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Service
 public class CricketService {
 
@@ -18,135 +20,98 @@ public class CricketService {
     private String apiKey;
 
     // --- API URLs ---
-    private final String CURRENT_MATCHES_URL = "https://api.cricapi.com/v1/currentMatches?apikey=";
-    private final String SERIES_LIST_URL = "https://api.cricapi.com/v1/series?apikey=";
-    private final String COUNTRIES_LIST_URL = "https://api.cricapi.com/v1/countries?apikey=";
-    private final String PLAYERS_LIST_URL = "https://api.cricapi.com/v1/players?apikey=";
-    private final String SERIES_INFO_URL = "https://api.cricapi.com/v1/series_info?apikey=";
-    private final String NEWS_AGGREGATION_URL = "https://rest.cricketapi.com/rest/v2/news_aggregation/"; 
+    private static final String BASE_URL = "https://api.cricapi.com/v1/";
+    private final String CURRENT_MATCHES_URL = BASE_URL + "currentMatches?apikey=";
+    private final String SERIES_LIST_URL = BASE_URL + "series?apikey=";
+    private final String COUNTRIES_LIST_URL = BASE_URL + "countries?apikey=";
+    private final String PLAYERS_LIST_URL = BASE_URL + "players?apikey=";
+    private final String SERIES_INFO_URL = BASE_URL + "series_info?apikey=";
+    
+    // Check your news provider documentation, often the key parameter name differs
+    private final String NEWS_AGGREGATION_URL = "https://rest.cricketapi.com/rest/v2/news_aggregation/";
 
     private final RestTemplate restTemplate;
 
-    // --- 1. MEMORY CACHE (The Free Database) ---
-    private CurrentMatchesResponse cachedMatches;
-    private SeriesListResponse cachedSeries;
-    private CountryListResponse cachedCountries;
-    private PlayerListResponse cachedPlayers;
-    private NewsAggregationResponse cachedNews;
+    // --- In-Memory Cache ---
+    private volatile CurrentMatchesResponse cachedMatches;
+    private volatile SeriesListResponse cachedSeries;
+    private volatile CountryListResponse cachedCountries;
+    private volatile PlayerListResponse cachedPlayers;
+    private volatile NewsAggregationResponse cachedNews;
     
-    // Special Cache for Series Details to prevent duplicate lookups
     private final Map<String, SeriesDetailResponse> seriesDetailCache = new ConcurrentHashMap<>();
 
     public CricketService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
-    // --- 2. INITIALIZATION (Runs once on Startup) ---
     @PostConstruct
     public void init() {
-        System.out.println("Initializing Cache... (Costs ~5 Credits)");
-        refreshHighFrequencyData(); // Matches
-        refreshDailyData();         // Players, Series, Countries
-        refreshNews();              // News
+        log.info("Initial cache warm-up starting...");
+        refreshHighFrequencyData();
+        refreshDailyData();
+        refreshNews();
+        log.info("Cache warm-up completed.");
     }
 
-    // --- 3. SCHEDULED TASKS (Background Workers) ---
+    // --- Background Refreshers ---
 
-    // A. High Frequency: Matches (Every 20 Minutes)
-    // ADDED: initialDelay to prevent double-fetch on startup
-    @Scheduled(fixedRate = 1200000, initialDelay = 1200000)
+    @Scheduled(fixedRate = 1200000, initialDelay = 1200000) // 20 mins
     public void refreshHighFrequencyData() {
         try {
-            System.out.println("Fetching Live Matches from API...");
+            log.info("Refreshing live matches...");
             String url = CURRENT_MATCHES_URL + apiKey;
-            ResponseEntity<CurrentMatchesResponse> response = restTemplate.getForEntity(url, CurrentMatchesResponse.class);
-            if (response.getBody() != null && "success".equalsIgnoreCase(response.getBody().getStatus())) {
-                this.cachedMatches = response.getBody();
-            }
+            this.cachedMatches = restTemplate.getForObject(url, CurrentMatchesResponse.class);
         } catch (Exception e) {
-            System.err.println("Error updating matches: " + e.getMessage());
+            log.error("Failed to refresh live matches: {}", e.getMessage());
         }
     }
 
-    // B. Medium Frequency: News (Every 6 Hours)
-    // ADDED: initialDelay
-    @Scheduled(fixedRate = 21600000, initialDelay = 21600000)
+    @Scheduled(fixedRate = 21600000, initialDelay = 21600000) // 6 hours
     public void refreshNews() {
         try {
-            System.out.println("Fetching News from API...");
+            log.info("Refreshing cricket news...");
             String url = NEWS_AGGREGATION_URL + "?access_token=" + apiKey;
-            ResponseEntity<NewsAggregationResponse> response = restTemplate.getForEntity(url, NewsAggregationResponse.class);
-            this.cachedNews = response.getBody();
+            this.cachedNews = restTemplate.getForObject(url, NewsAggregationResponse.class);
         } catch (Exception e) {
-            System.err.println("Error updating news: " + e.getMessage());
+            log.error("Failed to refresh news: {}", e.getMessage());
         }
     }
 
-    // C. Low Frequency: Players, Series, Countries (Every 24 Hours)
-    // ADDED: initialDelay
-    @Scheduled(fixedRate = 86400000, initialDelay = 86400000)
+    @Scheduled(fixedRate = 86400000, initialDelay = 86400000) // 24 hours
     public void refreshDailyData() {
         try {
-            System.out.println("Fetching Daily Data (Series, Players, Countries)...");
+            log.info("Performing daily data refresh (Series, Players, Countries)...");
             
-            // 1. Series
-            ResponseEntity<SeriesListResponse> seriesResp = restTemplate.getForEntity(SERIES_LIST_URL + apiKey, SeriesListResponse.class);
-            this.cachedSeries = seriesResp.getBody();
-
-            // 2. Players
-            ResponseEntity<PlayerListResponse> playerResp = restTemplate.getForEntity(PLAYERS_LIST_URL + apiKey, PlayerListResponse.class);
-            this.cachedPlayers = playerResp.getBody();
-
-            // 3. Countries
-            ResponseEntity<CountryListResponse> countryResp = restTemplate.getForEntity(COUNTRIES_LIST_URL + apiKey, CountryListResponse.class);
-            this.cachedCountries = countryResp.getBody();
+            this.cachedSeries = restTemplate.getForObject(SERIES_LIST_URL + apiKey, SeriesListResponse.class);
+            this.cachedPlayers = restTemplate.getForObject(PLAYERS_LIST_URL + apiKey, PlayerListResponse.class);
+            this.cachedCountries = restTemplate.getForObject(COUNTRIES_LIST_URL + apiKey, CountryListResponse.class);
             
-            // 4. Clear the Detail Cache daily to free memory
+            // Prevent memory leaks by clearing specific series details daily
             seriesDetailCache.clear();
-
         } catch (Exception e) {
-            System.err.println("Error updating daily data: " + e.getMessage());
+            log.error("Failed to refresh daily data: {}", e.getMessage());
         }
     }
 
-    // --- 4. PUBLIC METHODS (The "Zero Cost" Getters) ---
+    // --- Public Accessors ---
 
-    public CurrentMatchesResponse getCurrentMatches() {
-        return this.cachedMatches; 
-    }
-
-    public SeriesListResponse getSeriesList() {
-        return this.cachedSeries;
-    }
-
-    public CountryListResponse getCountryList() {
-        return this.cachedCountries;
-    }
-
-    public PlayerListResponse getPlayerList() {
-        return this.cachedPlayers;
-    }
-    
-    public NewsAggregationResponse getNewsFeed() {
-        return this.cachedNews;
-    }
+    public CurrentMatchesResponse getCurrentMatches() { return cachedMatches; }
+    public SeriesListResponse getSeriesList() { return cachedSeries; }
+    public CountryListResponse getCountryList() { return cachedCountries; }
+    public PlayerListResponse getPlayerList() { return cachedPlayers; }
+    public NewsAggregationResponse getNewsFeed() { return cachedNews; }
 
     public SeriesDetailResponse getSeriesDetail(String seriesId) {
-        if (seriesDetailCache.containsKey(seriesId)) {
-            return seriesDetailCache.get(seriesId);
-        }
-
-        try {
-            String url = SERIES_INFO_URL + apiKey + "&id=" + seriesId;
-            ResponseEntity<SeriesDetailResponse> response = restTemplate.getForEntity(url, SeriesDetailResponse.class);
-            
-            if (response.getBody() != null) {
-                seriesDetailCache.put(seriesId, response.getBody());
-                return response.getBody();
+        return seriesDetailCache.computeIfAbsent(seriesId, id -> {
+            try {
+                log.info("Fetching series detail from API for ID: {}", id);
+                String url = SERIES_INFO_URL + apiKey + "&id=" + id;
+                return restTemplate.getForObject(url, SeriesDetailResponse.class);
+            } catch (Exception e) {
+                log.error("Error fetching series detail: {}", e.getMessage());
+                return null;
             }
-        } catch (Exception e) {
-            System.err.println("Error fetching series detail: " + e.getMessage());
-        }
-        return null;
+        });
     }
 }

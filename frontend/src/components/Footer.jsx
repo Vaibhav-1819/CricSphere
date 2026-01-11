@@ -14,12 +14,12 @@ const Footer = () => {
   };
 
   return (
-    <footer className="relative bg-slate-950 text-slate-400 overflow-hidden font-sans border-t border-white/5">
+    <footer className="relative bg-[#0b1220] text-slate-400 overflow-hidden font-sans border-t border-white/5">
       
-      {/* --- Background Ambient Glows (Updated to Emerald/Teal Theme) --- */}
+      {/* --- Background Ambient Glows (Subtle Indigo/Blue for Dark Theme) --- */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] left-[20%] w-96 h-96 bg-emerald-600/10 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-[-20%] right-[10%] w-[30rem] h-[30rem] bg-teal-600/10 rounded-full blur-[120px]"></div>
+        <div className="absolute top-[-20%] left-[20%] w-96 h-96 bg-blue-600/5 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-[-20%] right-[10%] w-[30rem] h-[30rem] bg-indigo-600/5 rounded-full blur-[120px]"></div>
       </div>
 
       <div className="relative z-10 container mx-auto px-6 pt-20 pb-10">
@@ -27,27 +27,24 @@ const Footer = () => {
         {/* --- TOP SECTION: BRAND & NEWSLETTER --- */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16 border-b border-white/5 pb-12">
           
-          {/* Brand Info */}
+          {/* Brand Info - Cleaned up without container box */}
           <div className="lg:col-span-5 space-y-6">
-            <Link to="/" onClick={scrollToTop} className="flex items-center gap-3 group w-fit">
-              {/* Logo Container */}
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-white/10 flex items-center justify-center backdrop-blur-sm group-hover:scale-105 transition-transform duration-300">
-                {Logo ? (
-                  <img src={Logo} alt="Logo" className="w-8 h-8 object-contain drop-shadow-md" />
-                ) : (
-                  <span className="text-white font-black text-xl">CS</span>
-                )}
-              </div>
-              <span className="text-2xl font-black text-white tracking-tight group-hover:text-emerald-400 transition-colors">
-                CricSphere
+            <Link to="/home" onClick={scrollToTop} className="flex items-center gap-3 group w-fit">
+              <img 
+                src={Logo} 
+                alt="Logo" 
+                className="w-10 h-10 object-contain transition-transform group-hover:scale-110" 
+              />
+              <span className="text-2xl font-black text-white tracking-tighter uppercase italic">
+                Cric<span className="text-blue-500">Sphere</span>
               </span>
             </Link>
             
-            <p className="text-slate-400 leading-relaxed max-w-md text-base font-light">
-              The ultimate destination for the modern cricket fan. Real-time data, deep analytics, and global coverage in one elegant dashboard.
+            <p className="text-slate-500 leading-relaxed max-w-sm text-sm font-medium">
+              Redefining the way you experience the game. Real-time telemetry, deep analytics, and global coverage in one seamless dashboard.
             </p>
             
-            {/* Social Icons (SVGs) */}
+            {/* Social Icons */}
             <div className="flex gap-4">
               {[
                 { name: 'Twitter', path: "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" },
@@ -58,7 +55,7 @@ const Footer = () => {
                 <a 
                   key={social.name} 
                   href={`#${social.name.toLowerCase()}`} 
-                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 transition-all duration-300"
+                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 transition-all duration-300"
                   aria-label={social.name}
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -70,20 +67,20 @@ const Footer = () => {
           </div>
 
           {/* Newsletter Subscribe */}
-          <div className="lg:col-span-7 lg:pl-12 flex flex-col justify-center">
-            <div className="bg-gradient-to-r from-slate-900 to-slate-900/50 rounded-2xl p-8 border border-white/5 backdrop-blur-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+          <div className="lg:col-span-7 flex flex-col justify-center">
+            <div className="bg-white/[0.02] rounded-[2rem] p-8 border border-white/5 backdrop-blur-md relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
               
-              <h3 className="text-xl font-bold text-white mb-2 relative z-10">Stay in the Loop</h3>
-              <p className="text-sm text-slate-400 mb-6 relative z-10">Subscribe to our newsletter for weekly match schedules and exclusive stats.</p>
+              <h3 className="text-xl font-black text-white mb-2 uppercase tracking-tight relative z-10">THE PULSE NEWSLETTER</h3>
+              <p className="text-xs font-medium text-slate-500 mb-6 uppercase tracking-widest relative z-10">WEEKLY ANALYTICS & TRADE RUMORS.</p>
               
               <form className="flex flex-col sm:flex-row gap-3 relative z-10" onSubmit={(e) => e.preventDefault()}>
                 <input 
                   type="email" 
-                  placeholder="Enter your email address" 
-                  className="flex-1 bg-black/30 border border-white/10 text-white px-5 py-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-slate-600 text-sm"
+                  placeholder="Enter your email" 
+                  className="flex-1 bg-white/5 border border-white/10 text-white px-5 py-3 rounded-2xl focus:outline-none focus:border-blue-500 transition-all text-sm font-medium"
                 />
-                <button className="bg-white text-slate-950 font-bold px-8 py-3 rounded-xl hover:bg-emerald-50 hover:text-emerald-900 transition-colors shadow-lg shadow-white/5">
+                <button className="bg-blue-600 text-white font-black uppercase text-[10px] tracking-[0.2em] px-8 py-3 rounded-2xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20">
                   Subscribe
                 </button>
               </form>
@@ -92,9 +89,8 @@ const Footer = () => {
         </div>
 
         {/* --- MIDDLE SECTION: LINKS --- */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
           
-          {/* Link Columns */}
           {[
             { 
               title: "Live Cricket", 
@@ -109,7 +105,7 @@ const Footer = () => {
               links: [
                 { name: "Team Rankings", to: "/teams" },
                 { name: "Player Records", to: "/stats" },
-                { name: "Match Impact Scores", to: "/stats" }
+                { name: "MIS Scoreboard", to: "/stats" }
               ] 
             },
             { 
@@ -117,17 +113,16 @@ const Footer = () => {
               links: [
                 { name: "About Us", to: "/about" },
                 { name: "Privacy Policy", to: "/privacy" },
-                { name: "Terms of Service", to: "/terms" },
-                { name: "Contact Us", to: "/contact" } // Added Link Here
+                { name: "Contact Us", to: "/contact" }
               ] 
             }
           ].map((col, idx) => (
             <div key={idx}>
-              <h4 className="text-white font-bold mb-6 text-sm uppercase tracking-wider opacity-80">{col.title}</h4>
-              <ul className="space-y-4 text-sm font-medium">
+              <h4 className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 mb-8">{col.title}</h4>
+              <ul className="space-y-4">
                 {col.links.map((link) => (
                   <li key={link.name}>
-                    <Link to={link.to} className="hover:text-emerald-400 transition-colors flex items-center gap-2 group">
+                    <Link to={link.to} className="text-sm font-bold text-slate-400 hover:text-blue-400 transition-all flex items-center gap-2 group">
                       {link.highlight && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>}
                       <span className="group-hover:translate-x-1 transition-transform">{link.name}</span>
                     </Link>
@@ -137,59 +132,34 @@ const Footer = () => {
             </div>
           ))}
 
-          {/* Column 4: Mobile App (Interactive) */}
+          {/* Column 4: Mobile App */}
           <div>
-            <h4 className="text-white font-bold mb-6 text-sm uppercase tracking-wider opacity-80">Get the App</h4>
+            <h4 className="text-xs font-black uppercase tracking-[0.3em] text-slate-600 mb-8">Get the App</h4>
             <div className="space-y-3">
-              <button 
-                onClick={() => handleAppClick('iOS')}
-                className="w-full flex items-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 p-3 rounded-xl transition-all group text-left"
-              >
-                <svg className="w-8 h-8 fill-white group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.96 1.07-3.11-1.05.05-2.31.69-3.06 1.59-.69.82-1.27 2.1-1.09 3.19 1.19.09 2.38-.84 3.08-1.67z" />
-                </svg>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 leading-tight">Download on the</p>
-                  <p className="text-sm font-bold text-white">App Store</p>
-                </div>
-              </button>
-
-              <button 
-                onClick={() => handleAppClick('Android')}
-                className="w-full flex items-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 p-3 rounded-xl transition-all group text-left"
-              >
-                <svg className="w-7 h-7 fill-white group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                  <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
-                </svg>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 leading-tight">Get it on</p>
-                  <p className="text-sm font-bold text-white">Google Play</p>
-                </div>
-              </button>
+              <AppButton platform="iOS" sub="App Store" onClick={handleAppClick} />
+              <AppButton platform="Android" sub="Google Play" onClick={handleAppClick} />
             </div>
           </div>
         </div>
 
         {/* --- BOTTOM SECTION: COPYRIGHT --- */}
-        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-slate-500 text-center md:text-left">
-            © {currentYear} CricSphere Inc. All rights reserved.
+        <div className="border-t border-white/5 pt-10 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+            © {currentYear} CricSphere Engine. All rights reserved.
           </p>
           
-          <div className="flex items-center gap-6">
-             {/* Tech Stack Badge */}
-             <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-slate-500 uppercase tracking-wider">
-               <span>System Status</span>
-               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-               <span className="text-emerald-500">Normal</span>
+          <div className="flex items-center gap-8">
+             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-[0.2em]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-emerald-500">System Normal</span>
              </div>
 
              <button 
-               onClick={scrollToTop} 
-               className="flex items-center gap-2 text-xs font-bold text-white hover:text-emerald-400 transition-colors uppercase tracking-wider"
+                onClick={scrollToTop} 
+                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white hover:text-blue-400 transition-colors"
              >
-               Back to Top 
-               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                Back to Top 
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
              </button>
           </div>
         </div>
@@ -197,5 +167,26 @@ const Footer = () => {
     </footer>
   );
 };
+
+/* --- CLEAN HELPER COMPONENTS --- */
+
+const AppButton = ({ platform, sub, onClick }) => (
+  <button 
+    onClick={() => onClick(platform)}
+    className="w-full flex items-center gap-3 bg-white/5 border border-white/5 hover:bg-white/10 p-3 rounded-2xl transition-all group"
+  >
+    <div className="w-6 h-6 flex items-center justify-center">
+       {platform === 'iOS' ? (
+         <svg className="w-full h-full fill-white" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.96 1.07-3.11-1.05.05-2.31.69-3.06 1.59-.69.82-1.27 2.1-1.09 3.19 1.19.09 2.38-.84 3.08-1.67z" /></svg>
+       ) : (
+         <svg className="w-full h-full fill-white" viewBox="0 0 24 24"><path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" /></svg>
+       )}
+    </div>
+    <div className="text-left">
+      <p className="text-[9px] font-black text-slate-600 uppercase leading-none mb-1">{sub}</p>
+      <p className="text-xs font-black text-white uppercase">{platform}</p>
+    </div>
+  </button>
+);
 
 export default Footer;

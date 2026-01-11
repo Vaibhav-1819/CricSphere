@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Zap, Activity } from 'lucide-react';
 
 const IntroPage = () => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ const IntroPage = () => {
   }, [navigate]);
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-center items-center text-center overflow-hidden">
+    <div className="relative min-h-screen flex flex-col justify-center items-center text-center overflow-hidden bg-[#0b1220]">
       {/* Animated Layered Background */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -19,74 +20,71 @@ const IntroPage = () => {
         transition={{ duration: 2 }}
         className="absolute inset-0 z-0"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800 animate-pulse-slow"></div>
-        <motion.div
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 20, repeat: Infinity, repeatType: 'reverse' }}
-          className="absolute inset-0 bg-cover bg-center opacity-30"
-          style={{ backgroundImage: "url('https://source.unsplash.com/random/1920x1080/?cricket-stadium')" }}
-        />
-        {/* Floating particles for pro feel */}
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 bg-green-400 rounded-full opacity-60"
-            initial={{ x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight }}
-            animate={{ y: [0, 10, 0], x: [0, 5, 0] }}
-            transition={{ repeat: Infinity, duration: 5 + Math.random() * 5, ease: 'easeInOut', delay: Math.random() * 5 }}
-          />
-        ))}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0b1220] via-[#111a2e] to-black"></div>
+        
+        {/* Decorative Glows */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px]" />
       </motion.div>
 
-      {/* Content */}
+      {/* Content Container */}
       <motion.div
-        initial={{ y: 60, opacity: 0 }}
+        initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 1 }}
-        className="relative z-10 p-8 rounded-xl bg-black/60 backdrop-blur-md shadow-2xl max-w-xl"
+        transition={{ duration: 1.2, ease: "easeOut" }}
+        className="relative z-10 p-10 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-2xl shadow-2xl max-w-2xl mx-4"
       >
-        <h1 className="text-6xl md:text-7xl font-extrabold mb-4 text-green-400 drop-shadow-xl bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-green-300 to-green-500 animate-textGlow">
-          CricSphere
+        <div className="flex justify-center mb-6">
+           <motion.div 
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ repeat: Infinity, duration: 3 }}
+            className="p-4 bg-blue-600 rounded-3xl shadow-xl shadow-blue-500/20"
+           >
+             <Zap className="text-white fill-white" size={40} />
+           </motion.div>
+        </div>
+
+        <h1 className="text-6xl md:text-8xl font-black mb-4 tracking-tighter italic uppercase text-white">
+          Cric<span className="text-blue-500">Sphere</span>
         </h1>
-        <motion.p
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
-          className="text-xl md:text-2xl mb-6 font-semibold text-white/90"
-        >
-          Your Complete Cricket Destination
-        </motion.p>
-        <motion.p
+
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.8 }}
-          className="text-sm md:text-base text-gray-300"
+          transition={{ delay: 0.8 }}
+          className="flex items-center justify-center gap-3 mb-8"
         >
-          Get real-time live scores, match schedules, player stats, and all the latest cricket news in one elegant application built with Spring Boot and React.
-        </motion.p>
+          <div className="h-px w-8 bg-blue-500/50" />
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
+            Intelligent Analytics Engine
+          </span>
+          <div className="h-px w-8 bg-blue-500/50" />
+        </motion.div>
+
+        <p className="text-slate-400 text-sm md:text-base mb-10 leading-relaxed font-medium">
+          Experience the next generation of cricket telemetry. Real-time scores, 
+          advanced MIS analytics, and deep-dive player insights synced via Spring Boot.
+        </p>
+
         <motion.button
           onClick={() => navigate('/home')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="mt-6 px-6 py-3 bg-green-400 hover:bg-green-500 text-black font-bold rounded-lg shadow-lg transition-colors duration-300"
+          className="px-10 py-4 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-xl transition-all hover:bg-blue-500 hover:text-white"
         >
-          Skip Intro
+          Enter Arena
         </motion.button>
       </motion.div>
 
-      {/* Tailwind Custom Animation for Text Glow */}
-      <style>
-        {`
-          @keyframes textGlow {
-            0%, 100% { text-shadow: 0 0 10px #34D399, 0 0 20px #10B981; }
-            50% { text-shadow: 0 0 20px #34D399, 0 0 30px #10B981; }
-          }
-          .animate-textGlow {
-            animation: textGlow 2s infinite alternate;
-          }
-        `}
-      </style>
+      {/* Loading Bar Footer */}
+      <div className="absolute bottom-10 w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ width: "100%" }}
+          transition={{ duration: 5, ease: "linear" }}
+          className="h-full bg-blue-500"
+        />
+      </div>
     </div>
   );
 };

@@ -2,49 +2,48 @@ package com.cricsphere.controller;
 
 import com.cricsphere.model.*;
 import com.cricsphere.service.CricketService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/cricket")
-@CrossOrigin(origins = "*") // <--- ALLOWS REACT TO CONNECT WITHOUT ERRORS
+// Note: Global CORS in SecurityConfig handles the React connection
 public class CricketController {
 
     private final CricketService cricketService;
 
-    @Autowired
     public CricketController(CricketService cricketService) {
         this.cricketService = cricketService;
     }
 
     @GetMapping("/current-matches")
-    public CurrentMatchesResponse getCurrentMatches() {
-        // Hits the RAM (Memory), NOT the API. Cost: 0.
-        return cricketService.getCurrentMatches();
+    public ResponseEntity<CurrentMatchesResponse> getCurrentMatches() {
+        // Cached data from memory - High performance
+        return ResponseEntity.ok(cricketService.getCurrentMatches());
     }
 
     @GetMapping("/series")
-    public SeriesListResponse getSeriesList() {
-        return cricketService.getSeriesList();
+    public ResponseEntity<SeriesListResponse> getSeriesList() {
+        return ResponseEntity.ok(cricketService.getSeriesList());
     }
 
     @GetMapping("/countries")
-    public CountryListResponse getCountryList() {
-        return cricketService.getCountryList();
+    public ResponseEntity<CountryListResponse> getCountryList() {
+        return ResponseEntity.ok(cricketService.getCountryList());
     }
 
     @GetMapping("/players")
-    public PlayerListResponse getPlayerList() {
-        return cricketService.getPlayerList();
+    public ResponseEntity<PlayerListResponse> getPlayerList() {
+        return ResponseEntity.ok(cricketService.getPlayerList());
     }
 
     @GetMapping("/series/{seriesId}")
-    public SeriesDetailResponse getSeriesDetail(@PathVariable String seriesId) {
-        return cricketService.getSeriesDetail(seriesId);
+    public ResponseEntity<SeriesDetailResponse> getSeriesDetail(@PathVariable String seriesId) {
+        return ResponseEntity.ok(cricketService.getSeriesDetail(seriesId));
     }
     
     @GetMapping("/news-feed")
-    public NewsAggregationResponse getNewsFeed() {
-        return cricketService.getNewsFeed();
+    public ResponseEntity<NewsAggregationResponse> getNewsFeed() {
+        return ResponseEntity.ok(cricketService.getNewsFeed());
     }
 }

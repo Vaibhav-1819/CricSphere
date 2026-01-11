@@ -2,6 +2,7 @@ package com.cricsphere.user;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -12,41 +13,46 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Retrieves user details and converts them to a DTO for the frontend.
+     */
     public UserProfileDto getUserProfile(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
         
-        UserProfileDto dto = new UserProfileDto();
-        dto.setUsername(user.getUsername());
-        dto.setEmail(user.getEmail());
-        dto.setRole(user.getRole());
-        
-        // --- NEW: Map the favorite team to the DTO ---
-        dto.setFavoriteTeam(user.getFavoriteTeam());
-        
-        return dto;
+        return mapToDto(user);
     }
 
-    // --- NEW: Method to handle updates ---
+    /**
+     * Updates specific user preferences. 
+     * @Transactional ensures the database connection is handled safely.
+     */
+    @Transactional
     public UserProfileDto updateUserProfile(String username, UserProfileDto updateData) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        // Update fields if they are present in the request
+        // Update specific allowed fields
         if (updateData.getFavoriteTeam() != null) {
             user.setFavoriteTeam(updateData.getFavoriteTeam());
         }
+        
+        // You could also allow email updates here if desired
+        // if (updateData.getEmail() != null) { user.setEmail(updateData.getEmail()); }
 
-        // Save changes to Database
         User savedUser = userRepository.save(user);
+        return mapToDto(savedUser);
+    }
 
-        // Convert back to DTO to return to frontend
-        UserProfileDto dto = new UserProfileDto();
-        dto.setUsername(savedUser.getUsername());
-        dto.setEmail(savedUser.getEmail());
-        dto.setRole(savedUser.getRole());
-        dto.setFavoriteTeam(savedUser.getFavoriteTeam());
-
-        return dto;
+    /**
+     * Helper method to centralize the Entity -> DTO mapping logic.
+     */
+    private UserProfileDto mapToDto(User user) {
+        return UserProfileDto.builder()
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .favoriteTeam(user.getFavoriteTeam())
+                .build();
     }
 }

@@ -3,23 +3,20 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { 
+  Mail, Shield, Star, LogOut, Edit3, 
+  CheckCircle, XCircle, Award, Zap, User, Settings
+} from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, token, logout } = useAuth();
-  
-  // Data States
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Editing States
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    favoriteTeam: ''
-  });
+  const [formData, setFormData] = useState({ favoriteTeam: '' });
 
-  // Predefined Teams List (You can fetch this from an API too)
   const cricketTeams = [
     "Chennai Super Kings", "Mumbai Indians", "Royal Challengers Bangalore", 
     "Gujarat Titans", "Kolkata Knight Riders", "Sunrisers Hyderabad",
@@ -29,180 +26,160 @@ const ProfilePage = () => {
 
   const API_URL = 'http://localhost:8081/api/v1/user/profile';
 
-  // --- FETCH PROFILE ---
   useEffect(() => {
     if (!token) return;
-
     const fetchProfile = async () => {
       try {
         const response = await axios.get(API_URL, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         setProfile(response.data);
-        // Initialize form data with fetched values
         setFormData({ favoriteTeam: response.data.favoriteTeam || '' });
       } catch (err) {
-        console.error("Failed to fetch profile:", err);
-        setError("Failed to load user data.");
-        if (err.response && err.response.status === 401) logout();
+        setError("Telemetry link failed.");
+        if (err.response?.status === 401) logout();
       } finally {
         setLoading(false);
       }
     };
-
     fetchProfile();
   }, [token, logout]);
 
-  // --- HANDLE EDIT INPUT ---
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  // --- SUBMIT UPDATES ---
   const handleSave = async () => {
     setIsSaving(true);
     try {
       const response = await axios.put(API_URL, formData, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
-      // Update local profile with new data from server
       setProfile(response.data);
       setIsEditing(false);
     } catch (err) {
-      console.error("Update failed", err);
-      alert("Failed to update profile.");
+      alert("Failed to sync profile updates.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  // --- LOADING / ERROR / NO TOKEN STATES ---
-  if (!token) return <AccessDenied logout={logout} />; // (Extracted for brevity below)
+  if (!token) return <AccessDenied />;
   if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorMessage message={error} />;
 
   return (
-    <div className="min-h-screen pt-28 pb-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="min-h-screen pt-24 pb-12 flex items-center justify-center bg-[#f8fafc] dark:bg-[#0b0f1a] px-4">
+      {/* --- MODAL WRAPPER (Limited Width to prevent "Enlarged" look) --- */}
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl mx-auto"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative"
       >
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200/50 dark:border-slate-800/50">
-          
-          {/* Header Banner */}
-          <div className="relative h-48 bg-gradient-to-r from-emerald-600 to-teal-700">
-             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        {/* Background Glow */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl rounded-full -mr-10 -mt-10" />
+
+        {/* --- HEADER SECTION --- */}
+        <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-2">
+              <Settings size={14} className="text-slate-400" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Fan Profile</span>
+            </div>
+            <button 
+              onClick={logout}
+              className="text-slate-400 hover:text-rose-500 transition-colors"
+            >
+              <LogOut size={18} />
+            </button>
           </div>
 
-          <div className="relative px-8 pb-12">
-            
-            {/* Top Row: Avatar & Actions */}
-            <div className="flex flex-col md:flex-row items-center md:items-end -mt-20 mb-10 gap-6">
-              {/* Avatar */}
-              <motion.div className="relative">
-                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2rem] bg-slate-900 dark:bg-white p-1 shadow-2xl ring-4 ring-white dark:ring-slate-900">
-                  <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-600 rounded-[1.8rem] flex items-center justify-center">
-                    <span className="text-6xl md:text-7xl font-black text-white select-none">
-                      {profile?.username?.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-1 shadow-lg ring-4 ring-white dark:ring-slate-900">
+                <div className="w-full h-full bg-slate-900 rounded-[1.2rem] flex items-center justify-center">
+                  <span className="text-4xl font-black text-white uppercase">
+                    {profile?.username?.charAt(0)}
+                  </span>
                 </div>
-              </motion.div>
-
-              {/* Name & Title */}
-              <div className="text-center md:text-left flex-1 pb-2">
-                <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-1">
-                  {profile?.username}
-                </h1>
-                <p className="text-lg font-medium text-slate-500 dark:text-slate-400">
-                  {profile?.role} Account
-                </p>
               </div>
-
-              {/* Edit / Save Buttons */}
-              <div className="flex gap-3">
-                 {!isEditing ? (
-                   <button 
-                     onClick={() => setIsEditing(true)}
-                     className="px-6 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                   >
-                     Edit Profile
-                   </button>
-                 ) : (
-                   <div className="flex gap-2">
-                     <button 
-                       onClick={() => setIsEditing(false)}
-                       className="px-4 py-3 rounded-xl bg-red-100 text-red-600 font-bold hover:bg-red-200"
-                     >
-                       Cancel
-                     </button>
-                     <button 
-                       onClick={handleSave}
-                       disabled={isSaving}
-                       className="px-6 py-3 rounded-xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"
-                     >
-                       {isSaving ? 'Saving...' : 'Save Changes'}
-                     </button>
-                   </div>
-                 )}
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full flex items-center justify-center">
+                <Zap size={10} className="text-white fill-white" />
               </div>
             </div>
 
-            {/* --- INFO GRID --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-              
-              {/* Standard Read-Only Fields */}
-              <InfoCard label="Email" value={profile?.email} icon="mail" color="purple" />
-              <InfoCard label="Role" value={profile?.role} icon="badge" color="blue" />
-
-              {/* --- FAVORITE TEAM SECTION (EDITABLE) --- */}
-              <div className="group p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 md:col-span-2 transition-all duration-300">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-2xl">
-                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Favorite Team</span>
-                </div>
-                
-                {isEditing ? (
-                  <div className="relative">
-                    <select
-                      name="favoriteTeam"
-                      value={formData.favoriteTeam}
-                      onChange={handleInputChange}
-                      className="w-full p-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-600 rounded-xl text-lg font-bold text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all appearance-none"
-                    >
-                      <option value="">Select a team...</option>
-                      {cricketTeams.map(team => (
-                        <option key={team} value={team}>{team}</option>
-                      ))}
-                    </select>
-                    {/* Custom Arrow Icon */}
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-2xl font-black text-slate-900 dark:text-white">
-                    {profile?.favoriteTeam || "No team selected"}
-                  </div>
-                )}
+            <div className="flex-1">
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-1">
+                {profile?.username}
+              </h1>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-widest">{profile?.role} Account</span>
+                <div className="w-1 h-1 rounded-full bg-slate-300" />
+                <span className="text-xs text-slate-400 font-medium">{profile?.email}</span>
               </div>
-
             </div>
 
-            {/* Logout Button */}
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={logout}
-              className="w-full py-4 rounded-xl border-2 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
-            >
-              Sign Out
-            </motion.button>
+            {!isEditing ? (
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all shadow-sm"
+              >
+                <Edit3 size={18} />
+              </button>
+            ) : (
+              <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-lg"
+              >
+                <CheckCircle size={18} />
+              </button>
+            )}
+          </div>
+        </div>
 
+        {/* --- CONTENT AREA --- */}
+        <div className="p-8 space-y-6">
+          
+          {/* Favorite Team (Full Width Focus) */}
+          <div className="bg-slate-50 dark:bg-slate-800/40 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 group transition-all">
+            <div className="flex items-center justify-between mb-4">
+               <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-600/10 text-blue-600 rounded-lg"><Star size={16} /></div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Favorite Franchise</span>
+               </div>
+               {isEditing && <span className="text-[9px] font-bold text-blue-600 uppercase">Selection Active</span>}
+            </div>
+
+            {isEditing ? (
+              <select
+                value={formData.favoriteTeam}
+                onChange={(e) => setFormData({ favoriteTeam: e.target.value })}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              >
+                <option value="">Choose your team...</option>
+                {cricketTeams.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            ) : (
+              <div className="text-xl font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                {profile?.favoriteTeam || "Not Configured"}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Metrics (2 Column Grid) */}
+          <div className="grid grid-cols-2 gap-4">
+             <CompactMetric icon={<Award className="text-amber-500" />} label="Loyalty Tier" val="Gold Member" />
+             <CompactMetric icon={<Zap className="text-emerald-500" />} label="Status" val="Active" />
+          </div>
+
+          <div className="pt-4 flex flex-col gap-3">
+             <Link to="/home" className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-center text-xs font-black uppercase tracking-widest shadow-xl hover:scale-[1.01] transition-all">
+                Enter Match Center
+             </Link>
+             {isEditing && (
+                <button 
+                  onClick={() => setIsEditing(false)}
+                  className="w-full py-3 text-slate-400 hover:text-rose-500 text-[10px] font-black uppercase tracking-widest"
+                >
+                  Discard Changes
+                </button>
+             )}
           </div>
         </div>
       </motion.div>
@@ -210,39 +187,30 @@ const ProfilePage = () => {
   );
 };
 
-// --- HELPER COMPONENTS (For cleaner code) ---
-const InfoCard = ({ label, value, color, icon }) => (
-  <div className={`p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700`}>
-    <div className="flex items-start justify-between mb-2">
-      <div className={`p-3 bg-${color}-100 dark:bg-${color}-900/30 text-${color}-600 dark:text-${color}-400 rounded-2xl`}>
-         {/* Simple dynamic icon placeholder */}
-         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-      </div>
-      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</span>
-    </div>
-    <div className="text-xl font-bold text-slate-900 dark:text-white break-all">{value}</div>
-  </div>
-);
+// --- COMPONENT HELPERS ---
 
-const AccessDenied = ({ logout }) => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-    <div className="text-center">
-      <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">Access Denied</h2>
-      <Link to="/login" className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-bold">Login</Link>
-    </div>
+const CompactMetric = ({ icon, label, val }) => (
+  <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center gap-4">
+     <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-xl">{icon}</div>
+     <div>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">{label}</p>
+        <p className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-none">{val}</p>
+     </div>
   </div>
 );
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-    <div className="w-12 h-12 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin"></div>
+  <div className="min-h-screen flex items-center justify-center bg-[#0b0f1a]">
+    <div className="w-10 h-10 border-4 border-blue-600 rounded-full border-t-transparent animate-spin" />
   </div>
 );
 
-const ErrorMessage = ({ message }) => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-red-500 font-bold">
-    {message}
-  </div>
+const AccessDenied = () => (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0b0f1a] text-center p-6">
+      <Shield size={64} className="text-slate-800 mb-8" />
+      <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tighter italic">Access Prohibited</h2>
+      <Link to="/login" className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-blue-600/30">Go to Login</Link>
+    </div>
 );
 
 export default ProfilePage;

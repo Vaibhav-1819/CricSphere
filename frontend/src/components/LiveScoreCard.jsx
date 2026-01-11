@@ -1,145 +1,166 @@
-import React, { useMemo } from 'react';
-import useFetch from '../hooks/useFetch';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  MapPin, AlertCircle, RefreshCcw, Clock, Radio, 
+  Target, Trophy, ChevronRight, Activity 
+} from "lucide-react";
+import useFetch from "../hooks/useFetch";
 
-const LiveScoreCard = () => {
-  const { data, loading, error } = useFetch('http://localhost:8081/api/v1/cricket/current-matches');
+/* --- ACCURACY ENGINES --- */
 
-  // --- Helper: Get Team Initials & Color ---
-  const getTeamMeta = (teamName) => {
-    if (!teamName) return { initial: '?', color: 'from-gray-500 to-gray-700' };
+const isMatchDone = (status = "") => {
+  const s = status.toLowerCase();
+  return ["won", "draw", "tie", "abandon", "result"].some(key => s.includes(key));
+};
+
+const getBattingSide = (match) => {
+  const status = match.status?.toLowerCase() || "";
+  const [t1, t2] = match.teams;
+  // Dynamic parsing of toss strings to find active batting side
+  if (status.includes("opt to bat")) return status.split(" opt")[0].trim();
+  if (status.includes("opt to bowl")) {
+    const tossWinner = status.split(" opt")[0].trim();
+    return tossWinner.toLowerCase() === t1.toLowerCase() ? t2 : t1;
+  }
+  return null;
+};
+
+const getScoreForTeam = (match, team) => {
+  if (!Array.isArray(match.score)) return null;
+  // Match team name to inning string for precision mapping
+  return match.score.find(s => s.inning.toLowerCase().includes(team.toLowerCase()));
+};
+
+/* --- MAIN COMPONENT --- */
+
+export default function LiveScore() {
+  const { data, loading, error, reFetch } = useFetch("http://localhost:8081/api/v1/cricket/current-matches");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    const i = setInterval(reFetch, 30000); // 30s Polling
+    return () => clearInterval(i);
+  }, [reFetch]);
+
+  const { ongoing, results } = useMemo(() => {
+    if (!data?.data) return { ongoing: [], results: [] };
     
-    const initial = teamName.slice(0, 1).toUpperCase();
-    let color = 'from-gray-600 to-gray-800'; // Default
+    let processed = data.data.map(m => ({ ...m, done: isMatchDone(m.status) }));
     
-    // Basic color mapping for major teams
-    const lowerName = teamName.toLowerCase();
-    if (lowerName.includes('ind')) color = 'from-blue-500 to-blue-700';
-    if (lowerName.includes('aus')) color = 'from-yellow-400 to-yellow-600';
-    if (lowerName.includes('eng')) color = 'from-red-500 to-red-700';
-    if (lowerName.includes('pak')) color = 'from-emerald-500 to-emerald-700';
-    if (lowerName.includes('rsa')) color = 'from-green-500 to-green-700';
-    if (lowerName.includes('nz')) color = 'from-slate-700 to-black';
+    // Filtering by Match Type
+    if (filter !== "all") {
+      processed = processed.filter(m => m.matchType.toLowerCase() === filter);
+    }
 
-    return { initial, color };
-  };
+    processed.sort((a, b) => sortOrder === "desc" 
+      ? b.dateTimeGMT.localeCompare(a.dateTimeGMT) 
+      : a.dateTimeGMT.localeCompare(b.dateTimeGMT));
 
-  // --- Loading State (Skeleton) ---
-  if (loading) return (
-    <div className="w-full h-64 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg animate-pulse">
-       <div className="flex justify-between mb-8">
-         <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-         <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-       </div>
-       <div className="flex justify-between items-center mb-6">
-         <div className="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-         <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
-         <div className="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-       </div>
-       <div className="h-4 w-3/4 mx-auto bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-    </div>
-  );
+    return {
+      ongoing: processed.filter(m => !m.done),
+      results: processed.filter(m => m.done)
+    };
+  }, [data, sortOrder, filter]);
 
-  // --- Error / Empty State ---
-  if (error || !data || !data.data || data.data.length === 0) return (
-    <div className="h-full min-h-[250px] flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-6 text-center shadow-inner">
-      <span className="text-4xl mb-3">🏏</span>
-      <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">No Live Action</h3>
-      <p className="text-sm text-slate-500 mb-4">Check back later for live scores.</p>
-      <Link to="/schedules" className="text-sm font-semibold text-blue-600 hover:underline">
-        View Schedule &rarr;
-      </Link>
-    </div>
-  );
-
-  // Process Data
-  const match = data.data[0];
-  const teams = match.name.split(' vs ');
-  const team1Name = teams[0] || 'Team A';
-  const team2Name = teams[1] || 'Team B';
-  
-  const t1Meta = getTeamMeta(team1Name);
-  const t2Meta = getTeamMeta(team2Name);
+  if (loading && !data) return <div className="p-10 text-center text-slate-500 animate-pulse">Synchronizing match telemetry...</div>;
+  if (error) return <ErrorState onRetry={reFetch} />;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="relative w-full overflow-hidden rounded-2xl bg-slate-900 text-white shadow-2xl ring-1 ring-white/10 group"
-    >
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl group-hover:bg-blue-600/30 transition-colors duration-500"></div>
-      <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-red-600/10 rounded-full blur-3xl"></div>
+    <div className="max-w-7xl mx-auto p-4 md:p-8 min-h-screen bg-[#0b1220] text-white">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+        <div>
+          <h1 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-2">
+            <Activity size={28} className="text-blue-500" /> Match Center
+          </h1>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Logic-Driven Realtime Feed</p>
+        </div>
 
-      {/* --- Header --- */}
-      <div className="relative z-10 flex items-center justify-between p-5 border-b border-white/10">
-        <div className="flex items-center gap-2">
-           <span className="relative flex h-3 w-3">
-             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-           </span>
-           <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Live Now</span>
+        <div className="flex items-center gap-3 bg-white/5 p-1 rounded-xl border border-white/10">
+          {["all", "t20", "odi", "test"].map(f => (
+            <button key={f} onClick={() => setFilter(f)} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${filter === f ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+              {f}
+            </button>
+          ))}
         </div>
-        <div className="px-2 py-1 rounded bg-white/10 text-xs font-semibold tracking-wide text-white/80">
-          {match.matchType || 'T20'} Match
-        </div>
+      </header>
+
+      <MatchSection title="Ongoing" icon={<Radio size={14} className="text-red-500 animate-pulse" />} data={ongoing} isLive />
+      <MatchSection title="Recent Results" icon={<CheckCircle2 size={14} className="text-emerald-500" />} data={results} />
+    </div>
+  );
+}
+
+const MatchSection = ({ title, icon, data, isLive }) => (
+  <div className="mb-12">
+    <div className="flex items-center gap-2 mb-6">
+      <div className="p-2 bg-white/5 rounded-lg border border-white/10">{icon}</div>
+      <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{title}</h2>
+      <div className="h-px flex-1 bg-white/5" />
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {data.length > 0 ? data.map(m => <MatchCard key={m.id} match={m} isLive={isLive} />) : <p className="text-xs text-slate-600 italic">No matches found in this category.</p>}
+    </div>
+  </div>
+);
+
+const MatchCard = ({ match, isLive }) => {
+  const [t1, t2] = match.teams;
+  const battingNow = getBattingSide(match);
+  const score1 = getScoreForTeam(match, t1);
+  const score2 = getScoreForTeam(match, t2);
+  const isBreak = match.status.toLowerCase().includes("break");
+  
+  // Highlighting winner logic
+  const winner = isMatchDone(match.status) ? (match.status.toLowerCase().includes(t1.toLowerCase()) ? t1 : t2) : null;
+
+  return (
+    <motion.div layout className={`bg-[#111a2e] rounded-2xl p-6 border transition-all ${isLive ? 'border-blue-500/20 shadow-blue-500/5 shadow-xl' : 'border-white/5'}`}>
+      <div className="flex justify-between text-[9px] font-black text-slate-500 uppercase mb-6 tracking-widest">
+        <span>{match.matchType}</span>
+        {isLive && <span className="text-red-500 flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" /> LIVE</span>}
       </div>
 
-      {/* --- Scoreboard Body --- */}
-      <div className="relative z-10 p-6 flex flex-col items-center">
-        
-        {/* Teams Row */}
-        <div className="flex w-full justify-between items-center mb-6">
-          
-          {/* Team 1 */}
-          <div className="flex flex-col items-center gap-2 w-1/3">
-            <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br ${t1Meta.color} flex items-center justify-center shadow-lg ring-2 ring-white/20`}>
-              <span className="text-xl md:text-2xl font-bold">{t1Meta.initial}</span>
-            </div>
-            <span className="text-sm md:text-base font-bold text-center leading-tight">{team1Name}</span>
-          </div>
-
-          {/* VS Badge */}
-          <div className="flex flex-col items-center justify-center w-1/3">
-             <span className="text-2xl md:text-4xl font-black italic text-white/10 select-none">VS</span>
-          </div>
-
-          {/* Team 2 */}
-          <div className="flex flex-col items-center gap-2 w-1/3">
-            <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br ${t2Meta.color} flex items-center justify-center shadow-lg ring-2 ring-white/20`}>
-              <span className="text-xl md:text-2xl font-bold">{t2Meta.initial}</span>
-            </div>
-             <span className="text-sm md:text-base font-bold text-center leading-tight">{team2Name}</span>
-          </div>
-        </div>
-
-        {/* Status Text */}
-        <div className="bg-white/5 backdrop-blur-md rounded-xl px-4 py-3 w-full text-center border border-white/5">
-          <p className="text-sm font-medium text-blue-200 animate-pulse">
-            {match.status || "Match is currently in progress"}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">
-             {match.venue || "Venue Details Unavailable"}
-          </p>
-        </div>
+      <div className="space-y-4 mb-6">
+        <TeamRow name={t1} score={score1} batting={battingNow === t1} winner={winner === t1} />
+        <TeamRow name={t2} score={score2} batting={battingNow === t2} winner={winner === t2} />
       </div>
 
-      {/* --- Footer / CTA --- */}
-      <div className="relative z-10 bg-white/5 p-4 flex justify-center border-t border-white/5 hover:bg-white/10 transition-colors">
-        <Link 
-          to="/live" 
-          className="flex items-center gap-2 text-sm font-bold text-white transition-all group-hover:gap-3"
-        >
-          Detailed Scorecard
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-          </svg>
-        </Link>
+      <div className="pt-5 border-t border-white/5">
+        <div className={`flex items-center gap-2 mb-2 text-[11px] font-bold ${isLive ? 'text-blue-400' : 'text-slate-400'}`}>
+          <Target size={14}/> {isBreak ? <span className="text-amber-500 uppercase">Innings Break</span> : match.status}
+        </div>
+        <div className="text-slate-500 flex items-center gap-1 text-[10px] font-medium uppercase tracking-tighter">
+          <MapPin size={12} className="text-blue-500"/> {match.venue?.split(',')[0]}
+        </div>
       </div>
     </motion.div>
   );
 };
 
-export default LiveScoreCard;
+const TeamRow = ({ name, score, batting, winner }) => (
+  <div className={`flex justify-between items-center p-2 rounded-xl transition-colors ${batting ? 'bg-blue-500/10' : ''}`}>
+    <div className="flex items-center gap-3">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black text-white shadow-inner ${winner ? 'bg-emerald-600' : batting ? 'bg-blue-600' : 'bg-slate-700'}`}>
+        {name.charAt(0)}
+      </div>
+      <span className={`text-sm font-black uppercase tracking-tight ${winner ? 'text-emerald-400' : batting ? 'text-blue-400' : 'text-slate-300'}`}>
+        {name}
+      </span>
+      {batting && <span className="text-[14px] animate-bounce">🏏</span>}
+    </div>
+    <span className={`font-mono text-sm ${winner ? 'text-emerald-400 font-black' : 'text-white'}`}>
+      {score ? `${score.r}/${score.w} (${score.o})` : "—"}
+    </span>
+  </div>
+);
+
+const ErrorState = ({ onRetry }) => (
+  <div className="h-screen flex flex-col items-center justify-center text-center">
+    <AlertCircle size={48} className="text-red-500 mb-4" />
+    <h3 className="text-xl font-black">Sync Interrupted</h3>
+    <button onClick={onRetry} className="mt-6 flex items-center gap-2 px-6 py-2 bg-blue-600 rounded-lg font-bold">
+      <RefreshCcw size={16} /> Reconnect
+    </button>
+  </div>
+);

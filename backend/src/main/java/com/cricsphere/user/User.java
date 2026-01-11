@@ -1,7 +1,10 @@
 package com.cricsphere.user;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,8 +15,11 @@ import java.util.Collections;
 @Entity
 @Table(name = "users")
 @Data
-public class User implements UserDetails { // Implement UserDetails for Spring Security
-    
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class User implements UserDetails {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,24 +28,29 @@ public class User implements UserDetails { // Implement UserDetails for Spring S
     private String username;
 
     @Column(nullable = false)
-    private String password; 
+    private String password;
 
     @Column(unique = true, nullable = false)
     private String email;
 
-    // Default role for basic users
-    private String role = "USER"; 
+    // FIX: Added @Builder.Default to ensure the value is not null when using Builder
+    @Builder.Default
+    @Column(nullable = false)
+    private String role = "USER";
 
-    // --- NEW FIELD ADDED HERE ---
-    // This allows Hibernate to create the column and save the data
     @Column(name = "favorite_team")
     private String favoriteTeam;
 
-    // --- UserDetails Methods Implementation (KEPT AS IS) ---
+    // --- UserDetails Methods Implementation ---
 
+    /**
+     * Converts the internal role string into a format Spring Security understands.
+     * Spring Security expects roles to be prefixed with "ROLE_".
+     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
+        String formattedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+        return Collections.singletonList(new SimpleGrantedAuthority(formattedRole));
     }
 
     @Override

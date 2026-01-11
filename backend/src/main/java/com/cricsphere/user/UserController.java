@@ -1,8 +1,9 @@
 package com.cricsphere.user;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*; // Added PutMapping & RequestBody
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/user")
@@ -15,19 +16,31 @@ public class UserController {
     }
 
     @GetMapping("/profile")
-    public UserProfileDto getProfile() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        return userService.getUserProfile(username);
+    public ResponseEntity<UserProfileDto> getProfile() {
+        String username = getCurrentUsername();
+        UserProfileDto profile = userService.getUserProfile(username);
+        return ResponseEntity.ok(profile);
     }
 
-    // --- NEW ENDPOINT FOR SAVING DATA ---
     @PutMapping("/profile")
-    public UserProfileDto updateProfile(@RequestBody UserProfileDto updateData) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+    public ResponseEntity<UserProfileDto> updateProfile(@RequestBody UserProfileDto updateData) {
+        String username = getCurrentUsername();
         
-        // Pass the username (from token) and the data (from frontend) to service
-        return userService.updateUserProfile(username, updateData);
+        // Pass the username (secured via JWT) and the new data to the service
+        UserProfileDto updatedProfile = userService.updateUserProfile(username, updateData);
+        return ResponseEntity.ok(updatedProfile);
+    }
+
+    /**
+     * Helper to extract the username from the SecurityContext.
+     * In a JWT-based app, the 'Name' in the Authentication object 
+     * is the username extracted from the token.
+     */
+    private String getCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("No authenticated user found");
+        }
+        return authentication.getName();
     }
 }

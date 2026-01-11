@@ -2,143 +2,148 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const AboutSection = () => {
-  // Animation variants for staggered entry
+  // Logic-driven animation variants to match FeaturesSection stagger
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.2 }
+      transition: { staggerChildren: 0.1 }
     }
   };
 
   const itemVariants = {
-    hidden: { y: 30, opacity: 0 },
-    visible: { 
-      y: 0, 
-      opacity: 1,
-      transition: { type: "spring", stiffness: 50 } 
-    }
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
   };
 
-  const features = [
+  const aboutCards = [
     {
       title: "Real-Time Precision",
-      desc: "Lightning-fast score updates and ball-by-ball commentary that keeps you ahead of the broadcast.",
+      desc: "Experience lightning-fast telemetry and ball-by-ball updates directly from the global arena.",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       ),
-      color: "text-yellow-400",
-      bg: "bg-yellow-400/10"
-    },
-    {
-      title: "Deep Analytics",
-      desc: "Comprehensive player stats, team rankings, and historical data visualization for the true enthusiast.",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      ),
-      color: "text-blue-400",
-      bg: "bg-blue-400/10"
+      iconBg: "bg-blue-500/10",
+      iconColor: "text-blue-400",
+      lineColor: "bg-blue-500"
     },
     {
       title: "Global Coverage",
-      desc: "From the IPL to The Ashes, we cover every tournament, league, and international series worldwide.",
+      desc: "From local franchise leagues to ICC World Cups, we provide a unified dashboard for every series.",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      color: "text-emerald-400",
-      bg: "bg-emerald-400/10"
+      iconBg: "bg-indigo-500/10",
+      iconColor: "text-indigo-400",
+      lineColor: "bg-indigo-500"
+    },
+    {
+      title: "Historical Depth",
+      desc: "Access a comprehensive vault of player profiles, team rankings, and historical match archives.",
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      iconBg: "bg-emerald-500/10",
+      iconColor: "text-emerald-400",
+      lineColor: "bg-emerald-500"
     }
   ];
 
   return (
-    <section id="about" className="relative py-24 bg-slate-950 overflow-hidden">
+    // Reduced vertical padding (pt-20 pb-10) to eliminate excessive gaps
+    <section id="about" className="relative pt-20 pb-10 bg-[#0b1220] overflow-hidden">
       
-      {/* Background Decorative Elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-         <div className="absolute top-[-10%] left-[-5%] w-96 h-96 bg-blue-600/10 rounded-full blur-[100px]"></div>
-         <div className="absolute bottom-[-10%] right-[-5%] w-96 h-96 bg-emerald-600/10 rounded-full blur-[100px]"></div>
+      {/* Background Decor synced with FeaturesSection */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-600/5 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-emerald-600/5 rounded-full blur-[120px]"></div>
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
-        <motion.div
+        
+        {/* --- Metrics Row (Reduced Margin Bottom) --- */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-12 text-center mb-16"
+        >
+          <StatBox value="50+" label="Global Leagues" />
+          <StatBox value="24/7" label="Live Telemetry" isLive />
+          <StatBox value="100%" label="Data Sync" />
+          <StatBox value="10k+" label="Pro Analysts" />
+        </motion.div>
+
+        {/* --- Aligned Header (Tightened Spacing) --- */}
+        <div className="text-center mb-12"> 
+          <motion.span 
+             initial={{ opacity: 0, scale: 0.9 }}
+             whileInView={{ opacity: 1, scale: 1 }}
+             className="inline-block px-4 py-1.5 mb-4 text-[10px] font-black tracking-[0.3em] text-blue-400 uppercase bg-blue-400/10 rounded-full border border-blue-400/20"
+          >
+            THE ARENA ADVANTAGE
+          </motion.span>
+          
+          <motion.h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none">
+            Everything you need <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+              to own the game
+            </span>
+          </motion.h2>
+        </div>
+
+        {/* Aligned Card Grid */}
+        <motion.div 
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          className="max-w-5xl mx-auto"
+          viewport={{ once: true }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8"
         >
-          {/* Header Section */}
-          <div className="text-center mb-16">
-            <motion.span variants={itemVariants} className="inline-block px-3 py-1 mb-4 text-xs font-bold tracking-widest text-emerald-400 uppercase bg-emerald-400/10 rounded-full border border-emerald-400/20">
-              Our Mission
-            </motion.span>
-            
-            <motion.h2 variants={itemVariants} className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
-              Redefining the way you <br className="hidden md:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-                Experience Cricket
-              </span>
-            </motion.h2>
-            
-            <motion.p variants={itemVariants} className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              CricSphere isn't just a scoreboard. It's a complete ecosystem designed for the modern fan, 
-              combining cutting-edge technology with a passion for the gentleman's game.
-            </motion.p>
-          </div>
+          {aboutCards.map((card) => (
+            <motion.div
+              key={card.title}
+              variants={itemVariants}
+              whileHover={{ y: -5 }}
+              className="group relative p-10 bg-white/5 border border-white/5 rounded-[2.5rem] hover:bg-white/[0.07] transition-all duration-500"
+            >
+              {/* Icon Container with Purge-Safe Classes */}
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${card.iconBg} ${card.iconColor} group-hover:scale-110 transition-transform duration-500`}>
+                {card.icon}
+              </div>
 
-          {/* Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {features.map((feature, idx) => (
-              <motion.div
-                key={idx}
-                variants={itemVariants}
-                whileHover={{ y: -5 }}
-                className="p-8 rounded-2xl bg-slate-900/50 border border-white/5 backdrop-blur-sm hover:border-white/10 transition-all duration-300 shadow-xl"
-              >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 ${feature.bg} ${feature.color}`}>
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-                <p className="text-slate-400 leading-relaxed text-sm">
-                  {feature.desc}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+              <h3 className="text-xl font-black text-white mb-4 uppercase tracking-tight">
+                {card.title}
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">
+                {card.desc}
+              </p>
 
-          {/* Bottom Stats / Trust Indicators */}
-          <motion.div 
-            variants={itemVariants}
-            className="mt-16 pt-8 border-t border-white/5 grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
-          >
-             <div>
-                <div className="text-3xl font-black text-white">50+</div>
-                <div className="text-xs uppercase tracking-widest text-slate-500 mt-1">Leagues Covered</div>
-             </div>
-             <div>
-                <div className="text-3xl font-black text-white">24/7</div>
-                <div className="text-xs uppercase tracking-widest text-slate-500 mt-1">Live Updates</div>
-             </div>
-             <div>
-                <div className="text-3xl font-black text-white">100%</div>
-                <div className="text-xs uppercase tracking-widest text-slate-500 mt-1">Real-time Data</div>
-             </div>
-             <div>
-                <div className="text-3xl font-black text-white">10k+</div>
-                <div className="text-xs uppercase tracking-widest text-slate-500 mt-1">Active Users</div>
-             </div>
-          </motion.div>
-
+              {/* Identity Line */}
+              <div className={`absolute bottom-6 left-10 w-8 h-1 rounded-full ${card.lineColor} opacity-20 group-hover:w-20 group-hover:opacity-100 transition-all duration-500`}></div>
+            </motion.div>
+          ))}
         </motion.div>
       </div>
     </section>
   );
 };
+
+const StatBox = ({ value, label, isLive }) => (
+  <div className="group">
+    <div className="flex items-center justify-center gap-1.5 mb-2">
+      <span className="text-3xl font-black text-white tracking-tighter group-hover:text-blue-400 transition-colors">{value}</span>
+      {isLive && <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_#ef4444]" />}
+    </div>
+    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">{label}</span>
+  </div>
+);
 
 export default AboutSection;

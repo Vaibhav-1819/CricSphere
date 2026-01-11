@@ -1,18 +1,17 @@
 package com.cricsphere.util;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets; // Added Import
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtUtils {
 
@@ -22,13 +21,11 @@ public class JwtUtils {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    // --- 1. Key Generation (Updated) ---
-    // Uses raw bytes of the string to avoid Base64 decoding errors with plain text secrets
-    private Key key() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+    private Key getSigningKey() {
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // --- 2. Token Generation (Used upon successful Login) ---
     public String generateToken(Authentication authentication) {
         String username = authentication.getName();
         Date currentDate = new Date();
@@ -36,33 +33,31 @@ public class JwtUtils {
 
         return Jwts.builder()
                 .setSubject(username)
-                .setIssuedAt(new Date())
+                .setIssuedAt(currentDate)
                 .setExpiration(expireDate)
-                .signWith(key(), SignatureAlgorithm.HS256)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // --- 3. Extract Username from Token (Used in JWT Filter) ---
     public String getUsernameFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key())
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
+                .getBody()
+                .getSubject();
     }
 
-    // --- 4. Validate Token (Used in JWT Filter) ---
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                .setSigningKey(key())
+                .setSigningKey(getSigningKey())
                 .build()
-                .parse(token);
+                .parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
-            // Log or handle specific exceptions (SignatureException, ExpiredJwtException, etc.)
-            return false;
+        } catch (JwtException | IllegalArgumentException e) {
+            log.error("JWT validation error: {}", e.getMessage());
         }
+        return false;
     }
 }

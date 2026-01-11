@@ -1,13 +1,12 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom'; // Imported Link
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { 
   Shield, Users, Lock, Server, Mail, 
   CheckCircle, FileText, AlertTriangle, Clock,
-  Gavel, Ban, Globe, Scale
+  Gavel, Ban, Globe, Scale, BookOpen, ExternalLink
 } from 'lucide-react';
 
-// --- Configuration & Data ---
 const EFFECTIVE_DATE = "December 1, 2025";
 
 const legalSections = [
@@ -15,6 +14,7 @@ const legalSections = [
     id: 1,
     icon: CheckCircle,
     title: "Acceptance of Terms",
+    summary: "By using CricSphere, you agree to these rules legally.",
     content: "By accessing CricSphere, you confirm that you are at least 18 years old and agree to be bound by these Terms. Access constitutes a binding digital signature.",
     color: "text-blue-500",
     bg: "bg-blue-500/10"
@@ -23,6 +23,7 @@ const legalSections = [
     id: 2,
     icon: Users,
     title: "Account Integrity",
+    summary: "Your password is your responsibility.",
     content: "You are responsible for safeguarding your password. CricSphere cannot and will not be liable for any loss or damage arising from your failure to comply with security obligations.",
     color: "text-purple-500",
     bg: "bg-purple-500/10"
@@ -31,6 +32,7 @@ const legalSections = [
     id: 3,
     icon: Server,
     title: "API & Data Usage",
+    summary: "Our data comes from 3rd parties and isn't guaranteed.",
     content: "Our service aggregates data from third-party cricket telemetry providers. We act as a data processor, not a data creator. Service is provided on an 'AS IS' basis.",
     color: "text-emerald-500",
     bg: "bg-emerald-500/10"
@@ -39,6 +41,7 @@ const legalSections = [
     id: 4,
     icon: Lock,
     title: "Intellectual Property",
+    summary: "Don't steal our code or data algorithms.",
     content: "The CricSphere source code, algorithms, and UI design are exclusive property of CricSphere. You agree not to reverse-engineer or scrape our proprietary data engine.",
     color: "text-pink-500",
     bg: "bg-pink-500/10"
@@ -47,6 +50,7 @@ const legalSections = [
     id: 5,
     icon: Ban,
     title: "Prohibited Uses",
+    summary: "No hacking, scraping, or betting syndication.",
     content: "You may not use the service for any illegal purpose, including but not limited to: unauthorized betting syndication, match-fixing analysis, or automated scraping.",
     color: "text-red-500",
     bg: "bg-red-500/10"
@@ -55,174 +59,139 @@ const legalSections = [
     id: 6,
     icon: Globe,
     title: "Jurisdiction",
+    summary: "We follow the laws of India.",
     content: "These Terms shall be governed and construed in accordance with the laws of India, without regard to its conflict of law provisions.",
     color: "text-cyan-500",
     bg: "bg-cyan-500/10"
   }
 ];
 
-// --- Animation Variants ---
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-  }
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { type: "spring", stiffness: 50, damping: 20 }
-  }
-};
-
-// --- Components ---
-
-const Background = () => (
-  <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-    <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-indigo-500/5 blur-[120px]" />
-    <div className="absolute top-[40%] -right-[10%] w-[60%] h-[60%] rounded-full bg-emerald-500/5 blur-[120px]" />
-    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent opacity-20" />
-  </div>
-);
-
-const LegalCard = ({ item }) => (
-  <motion.div 
-    variants={cardVariants}
-    whileHover={{ y: -5, transition: { duration: 0.2 } }}
-    className="relative group bg-white dark:bg-slate-900/60 backdrop-blur-md rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full"
-  >
-    <div className="flex items-center gap-4 mb-4">
-      <div className={`p-3 rounded-xl ${item.bg}`}>
-        <item.icon size={20} className={item.color} />
-      </div>
-      <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{item.title}</h3>
-    </div>
-    <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed flex-grow">
-      {item.content}
-    </p>
-  </motion.div>
-);
-
 const TermsOfService = () => {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 selection:bg-indigo-500/30">
-      <Background />
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f1a] font-sans text-slate-900 dark:text-slate-100 selection:bg-indigo-500/30">
+      
+      {/* --- PROGRESS HUD (Fixed to Top) --- */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-slate-200 dark:bg-slate-800 z-[60]">
+        <motion.div 
+          className="h-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"
+          initial={{ width: 0 }}
+          whileInView={{ width: "100%" }}
+          viewport={{ once: false }}
+        />
+      </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
+      <div className="relative z-10 max-w-6xl mx-auto px-6 pt-28 pb-20">
         
-        {/* --- Hero Header --- */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-20"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 mb-6 backdrop-blur-sm">
-            <Scale size={14} className="text-indigo-500" />
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">
-              Legal Documentation
-            </span>
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-slate-900 via-slate-800 to-slate-500 dark:from-white dark:via-slate-200 dark:to-slate-600">
-            Terms of Service
-          </h1>
-          
-          <p className="max-w-2xl mx-auto text-lg text-slate-600 dark:text-slate-400">
-            Transparent rules for a fair game. Please read these terms carefully before utilizing the CricSphere platform.
-          </p>
-          
-          <div className="mt-8 flex justify-center gap-4 text-sm text-slate-500">
-            <span className="flex items-center gap-1.5">
-               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-               Effective: {EFFECTIVE_DATE}
-            </span>
-          </div>
-        </motion.div>
-
-        {/* --- CRITICAL DISCLAIMER SECTION --- */}
-        <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="mb-16"
-        >
-            <div className="bg-amber-50 dark:bg-slate-900/80 border border-amber-200 dark:border-amber-900/30 rounded-3xl p-8 md:p-10 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-10 opacity-5">
-                    <Clock size={200} />
-                </div>
-
-                <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start">
-                    <div className="bg-amber-100 dark:bg-amber-900/20 p-4 rounded-2xl shrink-0">
-                        <AlertTriangle className="w-8 h-8 text-amber-600 dark:text-amber-500" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
-                            Service Limitations & Data Latency
-                        </h2>
-                        <div className="space-y-4 text-slate-600 dark:text-slate-300">
-                            <p>
-                                <strong>Not Real-Time:</strong> While we strive for speed, CricSphere data is fetched at periodic intervals. Scores and commentary may lag behind live gameplay by several seconds or minutes depending on network conditions and source availability.
-                            </p>
-                            <p className="text-sm border-l-2 border-amber-500/50 pl-4 italic">
-                                <strong>Limitation of Liability:</strong> CricSphere is an analytics tool for entertainment. We are not a gambling platform. We expressly disclaim any liability for financial losses, betting outcomes, or decisions made based on our data. Users engage in any form of fantasy sports or betting at their own risk and subject to local laws.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+        {/* --- HEADER SECTION --- */}
+        <header className="mb-20">
+          <div className="flex flex-col items-start gap-4 mb-8">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-600/10 text-blue-600 dark:text-blue-400 border border-blue-600/20">
+              <Scale size={14} className="animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Legal Framework 2.1</span>
             </div>
-        </motion.div>
-
-        {/* --- General Terms Grid --- */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {legalSections.map((item) => (
-            <LegalCard key={item.id} item={item} />
-          ))}
-        </motion.div>
-
-        {/* --- Footer / Contact --- */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="mt-20 border-t border-slate-200 dark:border-slate-800 pt-10 flex flex-col items-center"
-        >
-          {/* Toggle Switcher */}
-          <div className="bg-slate-100 dark:bg-slate-900 p-1 rounded-xl flex gap-1 mb-6">
-            <button className="px-6 py-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-sm font-semibold text-slate-900 dark:text-white cursor-default">
-                Terms of Service
-            </button>
-            <Link 
-                to="/privacy" 
-                className="px-6 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-center"
-            >
-                Privacy Policy
-            </Link>
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">
+              Terms of <span className="text-blue-600">Service</span>
+            </h1>
+            <p className="max-w-xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+              Standard operating procedures for the CricSphere telemetry engine. Updated {EFFECTIVE_DATE}.
+            </p>
           </div>
+        </header>
+
+        {/* --- DUAL PANEL LAYOUT --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           
-          <div className="flex items-center gap-2 text-slate-500 mb-8">
-            <Mail size={16} />
-            <a href="mailto:legal@cricsphere.com" className="hover:text-indigo-500 transition-colors">legal@cricsphere.com</a>
+          {/* Main Legal Clauses (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
+            {legalSections.map((item) => (
+              <motion.section 
+                key={item.id}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                className="group bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-blue-500/30 transition-all shadow-sm"
+              >
+                <div className="flex items-center gap-4 mb-6">
+                  <div className={`p-3 rounded-2xl ${item.bg} group-hover:rotate-12 transition-transform`}>
+                    <item.icon size={24} className={item.color} />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{item.title}</h3>
+                </div>
+                
+                <div className="pl-2 border-l-2 border-slate-100 dark:border-slate-800 group-hover:border-blue-500/50 transition-colors">
+                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium mb-4">
+                    {item.content}
+                    </p>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl flex items-center gap-3">
+                        <BookOpen size={14} className="text-blue-600" />
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Summary: {item.summary}</span>
+                    </div>
+                </div>
+              </motion.section>
+            ))}
           </div>
 
-          <p className="text-xs text-slate-400 text-center max-w-md">
-            © 2025 CricSphere Analytics. <br/>
-            All rights reserved. Unauthorized reproduction or distribution of this software or its data engine is strictly prohibited.
-          </p>
-        </motion.div>
+          {/* Sticky Disclaimer Panel (4 cols) */}
+          <aside className="lg:col-span-4">
+            <div className="sticky top-32 space-y-6">
+              
+              {/* Gambling Warning */}
+              <div className="bg-amber-500 text-white rounded-[2rem] p-8 shadow-2xl shadow-amber-500/20 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                  <AlertTriangle size={120} />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <Shield size={18} /> High Alert
+                </h3>
+                <h2 className="text-2xl font-black mb-4 leading-tight uppercase italic">No Gambling Policy</h2>
+                <p className="text-xs font-bold leading-relaxed text-white/90">
+                    CricSphere is an analytics platform. We are NOT a betting site. Use of our data for illegal gambling is strictly prohibited. We are not liable for financial losses.
+                </p>
+              </div>
+
+              {/* Quick Links */}
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Internal Navigation</h3>
+                <nav className="space-y-3">
+                  <LegalLink to="/privacy" label="Privacy Data Policy" />
+                  <LegalLink to="/about" label="Tech Architecture" />
+                  <LegalLink to="/contact" label="Legal Inquiries" />
+                </nav>
+              </div>
+
+              {/* Data Transparency Card */}
+              <div className="p-6 bg-blue-600/5 rounded-3xl border border-blue-600/10 text-center">
+                 <Clock size={32} className="mx-auto text-blue-600 mb-4 opacity-50" />
+                 <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-loose">
+                    Latency Disclaimer: Data may lag by 5-10s based on node availability.
+                 </p>
+              </div>
+
+            </div>
+          </aside>
+        </div>
+
+        {/* --- FOOTER CTA --- */}
+        <div className="mt-24 pt-12 border-t border-slate-100 dark:border-slate-800 flex flex-col items-center">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-8">End of Document</p>
+            <Link to="/home" className="px-12 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl hover:scale-105 transition-all">
+                I Understand
+            </Link>
+        </div>
 
       </div>
     </div>
   );
 };
+
+const LegalLink = ({ to, label }) => (
+  <Link to={to} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-transparent hover:border-blue-500/20 group transition-all">
+    <span className="text-xs font-bold text-slate-600 dark:text-slate-400 group-hover:text-blue-600">{label}</span>
+    <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-600" />
+  </Link>
+);
+
+const ChevronRight = ({ size, className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
+);
 
 export default TermsOfService;

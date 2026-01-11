@@ -1,11 +1,12 @@
 package com.cricsphere.config.security;
 
 import com.cricsphere.user.UserRepository;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import java.util.Collections;
 
 @Service
@@ -22,12 +23,14 @@ public class CustomUserDetailsService implements UserDetailsService {
         com.cricsphere.user.User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        // Note: The User entity now implements UserDetails, simplifying the return.
-        // We ensure the role is prefixed with "ROLE_" for Spring Security standard.
+        // Format the role safely to ensure it starts with ROLE_ exactly once
+        String roleName = user.getRole().toUpperCase();
+        String formattedRole = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
+                Collections.singletonList(new SimpleGrantedAuthority(formattedRole))
         );
     }
 }
