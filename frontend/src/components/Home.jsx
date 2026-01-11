@@ -164,7 +164,7 @@ const Home = () => {
   useEffect(() => {
     getCurrentMatches()
       .then((res) => {
-        setMatchesData(res.data.data); // ← correct mapping
+        setMatchesData(res.data); // ← correct mapping
       })
       .catch((err) => console.error("API error:", err))
       .finally(() => setMatchesLoading(false));
