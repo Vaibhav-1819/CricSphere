@@ -2,10 +2,21 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Search, Calendar, ChevronRight, Info, Filter, ArrowUpDown, Hash } from 'lucide-react';
-import useFetch from '../hooks/useFetch';
+import { getSeries } from "../api/cricketApi";
+
 
 const Schedules = () => {
-    const { data, loading, error } = useFetch('http://localhost:8081/api/v1/cricket/series');
+    const [data, setData] = useState(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(false);
+
+React.useEffect(() => {
+  getSeries()
+    .then(res => setData(res.data))
+    .catch(() => setError(true))
+    .finally(() => setLoading(false));
+}, []);
+
     const [searchQuery, setSearchQuery] = useState("");
     const [formatFilter, setFormatFilter] = useState("All");
     const [sortOrder, setSortOrder] = useState("asc"); // 'asc' or 'desc'
