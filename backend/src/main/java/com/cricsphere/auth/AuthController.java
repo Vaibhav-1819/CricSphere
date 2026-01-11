@@ -4,6 +4,7 @@ import com.cricsphere.user.User;
 import com.cricsphere.user.UserRepository;
 import com.cricsphere.util.JwtUtils;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -38,6 +40,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterDto registerDto) {
+        log.info("Attempting to register user: {}", registerDto.getUsername());
+
         if (userRepository.existsByUsername(registerDto.getUsername())) {
             return ResponseEntity
                     .badRequest()
@@ -50,13 +54,17 @@ public class AuthController {
                     .body(Map.of("message", "Error: Email is already in use!"));
         }
 
-        User user = new User();
-        user.setUsername(registerDto.getUsername());
-        user.setEmail(registerDto.getEmail());
-        user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
-        user.setRole("ROLE_USER"); // Standard Spring Security role format
+        // ✅ Using Builder Pattern from Step 3
+        User user = User.builder()
+                .username(registerDto.getUsername())
+                .email(registerDto.getEmail())
+                .password(passwordEncoder.encode(registerDto.getPassword()))
+                .role("USER") // Our User entity logic handles the "ROLE_" prefix
+                .favoriteTeam(registerDto.getFavoriteTeam())
+                .build();
 
         userRepository.save(user);
+        log.info("User registered successfully: {}", user.getUsername());
 
         return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
     }
@@ -64,6 +72,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginDto loginDto) {
         try {
+            log.info("Login attempt for user: {}", loginDto.getUsername());
+            
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginDto.getUsername(),
@@ -74,7 +84,6 @@ public class AuthController {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             String jwt = jwtUtils.generateToken(authentication);
 
-            // Return structured JSON
             return ResponseEntity.ok(Map.of(
                 "token", jwt,
                 "type", "Bearer",
@@ -82,6 +91,7 @@ public class AuthController {
             ));
 
         } catch (BadCredentialsException e) {
+            log.warn("Failed login attempt for user: {}", loginDto.getUsername());
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Invalid username or password"));

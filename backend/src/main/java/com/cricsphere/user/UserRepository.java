@@ -7,14 +7,15 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     
-    // Used for login and profile fetching
+    // Used for login, JWT authentication, and profile fetching
     Optional<User> findByUsername(String username);
     
-    // Used to verify if a user exists by email
+    // Used for password recovery or email-based lookups
     Optional<User> findByEmail(String email);
     
-    // Registration checks
+    // Registration checks to prevent duplicate usernames
     Boolean existsByUsername(String username);
     
+    // Registration checks to prevent duplicate emails
     Boolean existsByEmail(String email);
 }

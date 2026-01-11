@@ -22,4 +22,12 @@ public class Score {
 
     @JsonProperty("inning")
     private String inning;
+
+    /**
+     * Helper to display the score in a standard cricket format.
+     * Example: "182/4 (19.2 ov)"
+     */
+    public String getDisplayScore() {
+        return String.format("%d/%d (%s ov)", runs, wickets, overs);
+    }
 }

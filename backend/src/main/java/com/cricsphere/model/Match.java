@@ -4,9 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
 
+@Slf4j
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,10 +24,10 @@ public class Match {
     private String name;
 
     @JsonProperty("matchType")
-    private String matchType; // e.g., "t20", "odi", "test"
+    private String matchType; 
 
     @JsonProperty("status")
-    private String status; // e.g., "Match Started", "Stumps", "Result"
+    private String status; 
 
     @JsonProperty("venue")
     private String venue;
@@ -36,17 +39,21 @@ public class Match {
     private String dateTimeGMT;
 
     @JsonProperty("teams")
-    private java.util.List<String> teams; // Basic list of team names
+    private List<String> teams; 
 
     @JsonProperty("score")
-    private java.util.List<Score> score; // Nested score details
+    private List<Score> score; 
 
     /**
-     * Helper to check if the match is currently live based on the status string.
+     * Helper to check if the match is currently live.
+     * Expanded to catch more common live status indicators.
      */
     public boolean isLive() {
         if (status == null) return false;
         String lowerStatus = status.toLowerCase();
-        return lowerStatus.contains("live") || lowerStatus.contains("started");
+        return lowerStatus.contains("live") || 
+               lowerStatus.contains("started") || 
+               lowerStatus.contains("innings break") ||
+               lowerStatus.contains("over");
     }
 }

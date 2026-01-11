@@ -3,9 +3,15 @@ package com.cricsphere.auth;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RegisterDto {
 
     @NotBlank(message = "Username is required")
@@ -19,4 +25,7 @@ public class RegisterDto {
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     private String email;
+
+    // Added to match your AuthController and User entity
+    private String favoriteTeam;
 }

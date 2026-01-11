@@ -4,9 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@Slf4j
 @Data
 @Builder
 @NoArgsConstructor
@@ -24,14 +26,24 @@ public class Player {
     private String country;
 
     @JsonProperty("role")
-    private String role; // e.g., "Batsman", "Bowler", "Wicketkeeper"
+    private String role; 
 
     @JsonProperty("battingStyle")
-    private String battingStyle; // e.g., "Right-hand bat"
+    private String battingStyle; 
 
     @JsonProperty("bowlingStyle")
-    private String bowlingStyle; // e.g., "Right-arm fast"
+    private String bowlingStyle; 
 
     @JsonProperty("faceImage")
-    private String faceImage; // URL to player's profile picture
+    private String faceImage; 
+
+    /**
+     * Helper to return a placeholder image if the faceImage is null.
+     */
+    public String getSafeFaceImage() {
+        if (faceImage == null || faceImage.isEmpty()) {
+            return "https://static.cricsphere.com/placeholders/player-placeholder.png";
+        }
+        return faceImage;
+    }
 }

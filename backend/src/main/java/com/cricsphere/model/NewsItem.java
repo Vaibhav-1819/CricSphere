@@ -24,16 +24,17 @@ public class NewsItem {
     private String url;
 
     @JsonProperty("description")
-    private String description; // Short summary of the news
+    private String description; 
 
     @JsonProperty("image")
-    private String image; // Thumbnail or header image URL
+    private String image; 
 
     @JsonProperty("published_at")
     private String publishedAt;
 
     /**
-     * Helper to get a preview of the description if it's too long
+     * Helper to get a preview of the description if it's too long.
+     * Useful for UI news cards on the Vercel frontend.
      */
     public String getShortDescription() {
         if (description != null && description.length() > 100) {

@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,15 +20,11 @@ import java.io.IOException;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor // ✅ Replaces manual constructor for dependency injection
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
     private final UserDetailsService userDetailsService;
-
-    public JwtAuthenticationFilter(JwtUtils jwtUtils, UserDetailsService userDetailsService) {
-        this.jwtUtils = jwtUtils;
-        this.userDetailsService = userDetailsService;
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -59,8 +56,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         } catch (Exception e) {
             log.error("Cannot set user authentication: {}", e.getMessage());
-            // We don't throw an exception here so that the filter chain can continue
-            // and the AuthenticationEntryPoint can handle the unauthorized response later.
         }
 
         // 4. Continue to the next filter

@@ -33,7 +33,6 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    // FIX: Added @Builder.Default to ensure the value is not null when using Builder
     @Builder.Default
     @Column(nullable = false)
     private String role = "USER";
@@ -41,16 +40,23 @@ public class User implements UserDetails {
     @Column(name = "favorite_team")
     private String favoriteTeam;
 
-    // --- UserDetails Methods Implementation ---
+    // --- UserDetails Methods ---
 
-    /**
-     * Converts the internal role string into a format Spring Security understands.
-     * Spring Security expects roles to be prefixed with "ROLE_".
-     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Logic: Ensures Spring Security always sees "ROLE_USER" or "ROLE_ADMIN"
         String formattedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
         return Collections.singletonList(new SimpleGrantedAuthority(formattedRole));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.password;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.username;
     }
 
     @Override

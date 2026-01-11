@@ -21,6 +21,10 @@ public class JwtUtils {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
+    /**
+     * ✅ Generates a safe signing key.
+     * Note: Your jwt.secret in application.properties MUST be at least 32 characters long.
+     */
     private Key getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
@@ -31,6 +35,8 @@ public class JwtUtils {
         Date currentDate = new Date();
         Date expireDate = new Date(currentDate.getTime() + jwtExpiration);
 
+        log.info("Generating JWT token for user: {}", username);
+
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(currentDate)
@@ -40,12 +46,12 @@ public class JwtUtils {
     }
 
     public String getUsernameFromToken(String token) {
-        return Jwts.parserBuilder()
+        Claims claims = Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
+        return claims.getSubject();
     }
 
     public boolean validateToken(String token) {
@@ -55,8 +61,16 @@ public class JwtUtils {
                 .build()
                 .parseClaimsJws(token);
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            log.error("JWT validation error: {}", e.getMessage());
+        } catch (MalformedJwtException e) {
+            log.error("Invalid JWT token: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            log.error("JWT token is expired: {}", e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.error("JWT token is unsupported: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.error("JWT claims string is empty: {}", e.getMessage());
+        } catch (SignatureException e) {
+            log.error("JWT signature does not match: {}", e.getMessage());
         }
         return false;
     }

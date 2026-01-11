@@ -4,11 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Data
 @Builder
 @NoArgsConstructor
@@ -24,10 +26,16 @@ public class CurrentMatchesResponse {
     private List<Match> data = new ArrayList<>();
 
     /**
-     * Useful for checking if any matches are currently live
-     * without checking for nulls or size in the controller.
+     * Checks if the response contains live matches.
+     * Logs the count for monitoring purposes.
      */
     public boolean hasMatches() {
-        return data != null && !data.isEmpty();
+        boolean exists = data != null && !data.isEmpty();
+        if (exists) {
+            log.info("Found {} live matches in the current response.", data.size());
+        } else {
+            log.warn("CurrentMatches API returned an empty data list.");
+        }
+        return exists;
     }
 }

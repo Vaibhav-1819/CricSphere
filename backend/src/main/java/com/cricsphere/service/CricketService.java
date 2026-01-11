@@ -4,7 +4,6 @@ import com.cricsphere.model.*;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -21,18 +20,14 @@ public class CricketService {
 
     // --- API URLs ---
     private static final String BASE_URL = "https://api.cricapi.com/v1/";
-    private final String CURRENT_MATCHES_URL = BASE_URL + "currentMatches?apikey=";
-    private final String SERIES_LIST_URL = BASE_URL + "series?apikey=";
-    private final String COUNTRIES_LIST_URL = BASE_URL + "countries?apikey=";
-    private final String PLAYERS_LIST_URL = BASE_URL + "players?apikey=";
-    private final String SERIES_INFO_URL = BASE_URL + "series_info?apikey=";
     
-    // Check your news provider documentation, often the key parameter name differs
-    private final String NEWS_AGGREGATION_URL = "https://rest.cricketapi.com/rest/v2/news_aggregation/";
+    // Check your news provider documentation; ensure this URL is correct for your subscription
+    private static final String NEWS_AGGREGATION_URL = "https://rest.cricketapi.com/rest/v2/news_aggregation/";
 
     private final RestTemplate restTemplate;
 
     // --- In-Memory Cache ---
+    // volatile ensures visibility across different threads during @Scheduled updates
     private volatile CurrentMatchesResponse cachedMatches;
     private volatile SeriesListResponse cachedSeries;
     private volatile CountryListResponse cachedCountries;
@@ -47,50 +42,56 @@ public class CricketService {
 
     @PostConstruct
     public void init() {
-        log.info("Initial cache warm-up starting...");
-        refreshHighFrequencyData();
-        refreshDailyData();
-        refreshNews();
-        log.info("Cache warm-up completed.");
+        log.info("🚀 Initializing CricketService: Starting cache warm-up...");
+        try {
+            refreshHighFrequencyData();
+            refreshDailyData();
+            refreshNews();
+            log.info("✅ Cache warm-up completed successfully.");
+        } catch (Exception e) {
+            log.error("⚠️ Cache warm-up partially failed. Application will retry on next schedule: {}", e.getMessage());
+        }
     }
 
     // --- Background Refreshers ---
 
-    @Scheduled(fixedRate = 1200000, initialDelay = 1200000) // 20 mins
+    @Scheduled(fixedRate = 1200000) // Every 20 mins
     public void refreshHighFrequencyData() {
         try {
-            log.info("Refreshing live matches...");
-            String url = CURRENT_MATCHES_URL + apiKey;
+            log.info("🔄 Refreshing live matches...");
+            String url = BASE_URL + "currentMatches?apikey=" + apiKey;
             this.cachedMatches = restTemplate.getForObject(url, CurrentMatchesResponse.class);
         } catch (Exception e) {
-            log.error("Failed to refresh live matches: {}", e.getMessage());
+            log.error("❌ Failed to refresh live matches: {}", e.getMessage());
         }
     }
 
-    @Scheduled(fixedRate = 21600000, initialDelay = 21600000) // 6 hours
+    @Scheduled(fixedRate = 21600000) // Every 6 hours
     public void refreshNews() {
         try {
-            log.info("Refreshing cricket news...");
+            log.info("🔄 Refreshing cricket news...");
+            // Standardizing the query param to access_token or apikey based on your provider
             String url = NEWS_AGGREGATION_URL + "?access_token=" + apiKey;
             this.cachedNews = restTemplate.getForObject(url, NewsAggregationResponse.class);
         } catch (Exception e) {
-            log.error("Failed to refresh news: {}", e.getMessage());
+            log.error("❌ Failed to refresh news: {}", e.getMessage());
         }
     }
 
-    @Scheduled(fixedRate = 86400000, initialDelay = 86400000) // 24 hours
+    @Scheduled(fixedRate = 86400000) // Every 24 hours
     public void refreshDailyData() {
         try {
-            log.info("Performing daily data refresh (Series, Players, Countries)...");
+            log.info("📅 Performing daily data refresh (Series, Players, Countries)...");
             
-            this.cachedSeries = restTemplate.getForObject(SERIES_LIST_URL + apiKey, SeriesListResponse.class);
-            this.cachedPlayers = restTemplate.getForObject(PLAYERS_LIST_URL + apiKey, PlayerListResponse.class);
-            this.cachedCountries = restTemplate.getForObject(COUNTRIES_LIST_URL + apiKey, CountryListResponse.class);
+            this.cachedSeries = restTemplate.getForObject(BASE_URL + "series?apikey=" + apiKey, SeriesListResponse.class);
+            this.cachedPlayers = restTemplate.getForObject(BASE_URL + "players?apikey=" + apiKey, PlayerListResponse.class);
+            this.cachedCountries = restTemplate.getForObject(BASE_URL + "countries?apikey=" + apiKey, CountryListResponse.class);
             
-            // Prevent memory leaks by clearing specific series details daily
+            // Clear specific cache to prevent stale data and memory growth
             seriesDetailCache.clear();
+            log.info("✅ Daily data refresh complete.");
         } catch (Exception e) {
-            log.error("Failed to refresh daily data: {}", e.getMessage());
+            log.error("❌ Failed to refresh daily data: {}", e.getMessage());
         }
     }
 
@@ -105,11 +106,11 @@ public class CricketService {
     public SeriesDetailResponse getSeriesDetail(String seriesId) {
         return seriesDetailCache.computeIfAbsent(seriesId, id -> {
             try {
-                log.info("Fetching series detail from API for ID: {}", id);
-                String url = SERIES_INFO_URL + apiKey + "&id=" + id;
+                log.info("🌐 Fetching series detail from API for ID: {}", id);
+                String url = BASE_URL + "series_info?apikey=" + apiKey + "&id=" + id;
                 return restTemplate.getForObject(url, SeriesDetailResponse.class);
             } catch (Exception e) {
-                log.error("Error fetching series detail: {}", e.getMessage());
+                log.error("❌ Error fetching series detail for ID {}: {}", id, e.getMessage());
                 return null;
             }
         });

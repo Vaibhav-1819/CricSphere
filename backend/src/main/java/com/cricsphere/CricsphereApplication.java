@@ -9,17 +9,18 @@ import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @SpringBootApplication
-@EnableScheduling // Enables the @Scheduled background tasks in CricketService
+@EnableScheduling // Enables background tasks for live score updates
 public class CricsphereApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(CricsphereApplication.class, args);
-        log.info("Cricsphere Backend is running successfully on http://localhost:8080");
+        log.info("🚀 Cricsphere Backend is live!");
+        log.info("Local access: http://localhost:8080");
     }
 
     /**
-     * Centralized RestTemplate bean used by CricketService 
-     * to fetch data from external cricket APIs.
+     * Centralized RestTemplate bean. 
+     * Managing this as a Bean is more efficient than creating 'new RestTemplate()' in every service.
      */
     @Bean
     public RestTemplate restTemplate() {

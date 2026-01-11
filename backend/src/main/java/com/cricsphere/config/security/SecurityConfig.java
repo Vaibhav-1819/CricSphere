@@ -79,26 +79,26 @@ public class SecurityConfig {
     }
 
     /**
-     * ✅ THIS is the fix that allows Vercel to access Render
+     * ✅ Corrected: Only one @Bean annotation here.
+     * This allows Vercel frontend to communicate with your Render backend.
      */
     @Bean
-    @Bean
-public CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration config = new CorsConfiguration();
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
 
-    config.setAllowedOriginPatterns(List.of(
-            "http://localhost:*",
-            "https://*.vercel.app"
-    ));
+        // Allows local development and any Vercel deployment
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "https://*.vercel.app"
+        ));
 
-    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    config.setAllowedHeaders(List.of("*"));
-    config.setExposedHeaders(List.of("Authorization"));
-    config.setAllowCredentials(true);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization"));
+        config.setAllowCredentials(true);
 
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", config);
-    return source;
-}
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 }
