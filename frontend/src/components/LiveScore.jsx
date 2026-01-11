@@ -11,7 +11,7 @@ import {
   Target
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import useFetch from "../hooks/useFetch";
++ import { getCurrentMatches } from "../api/cricketApi";
 
 /* ---------------- MATCH STATE HELPERS ---------------- */
 
@@ -111,9 +111,27 @@ const getMatchContext = (match) => {
 /* ---------------- MAIN COMPONENT ---------------- */
 
 export default function LiveScore() {
-  const { data, loading, error, reFetch } = useFetch(
-    "http://localhost:8081/api/v1/cricket/current-matches"
-  );
+  const [data, setData] = useState(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+
+const reFetch = () => {
+  setLoading(true);
+  getCurrentMatches()
+    .then(res => setData(res.data))
+    .catch(err => {
+      console.error(err);
+      setError(true);
+    })
+    .finally(() => setLoading(false));
+};
+
+useEffect(() => {
+  reFetch();
+  const t = setInterval(reFetch, 30000);
+  return () => clearInterval(t);
+}, []);
+
   const [sortOrder, setSortOrder] = useState("desc");
 
   useEffect(() => {
