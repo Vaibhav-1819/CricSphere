@@ -10,8 +10,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 const SeriesPage = () => {
   const { seriesId } = useParams();
   const navigate = useNavigate();
-  const { data, loading, error } = useFetch(`http://localhost:8081/api/v1/cricket/series/${seriesId}`);
-  
+// Use the Environment Variable you set in Vercel
+  const { data, loading, error } = useFetch(`${import.meta.env.VITE_API_URL}/api/v1/cricket/series/${seriesId}`);  
   const [activeFilter, setActiveFilter] = useState('All');
 
   // --- Logic: Sorting (Ascending) & Filtering ---

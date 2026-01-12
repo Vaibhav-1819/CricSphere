@@ -3,7 +3,7 @@ import axios from "axios";
 
 const AuthContext = createContext(null);
 
-const API_URL = "http://localhost:8081/api/v1/auth";
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth`;
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
