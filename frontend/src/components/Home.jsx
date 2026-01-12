@@ -119,7 +119,7 @@ useEffect(() => {
         return (
             <div className="h-screen flex flex-col items-center justify-center bg-white dark:bg-[#080a0f]">
                 <Loader2 className="animate-spin text-blue-500 mb-4" size={40} />
-                <p className="text-slate-500 font-black uppercase text-[10px] tracking-widest">Syncing Arena Telemetry...</p>
+                <p className="text-slate-500 font-black uppercase text-[10px] tracking-widest">Syncing Scores...</p>
             </div>
         );
     }
@@ -181,15 +181,15 @@ useEffect(() => {
                         <div className="bg-gradient-to-br from-indigo-600 to-blue-800 rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-2xl shadow-blue-500/20">
                             <Crown className="absolute -top-4 -right-4 text-white/10 group-hover:scale-125 transition-transform duration-700" size={120} />
                             <div className="relative z-10">
-                                <h3 className="text-2xl font-black mb-2 uppercase italic leading-none">Arena Pro</h3>
-                                <p className="text-[11px] text-blue-100 font-bold mb-8 uppercase tracking-widest opacity-80">Unlock the Stats Lab</p>
+                                <h3 className="text-2xl font-black mb-2 uppercase italic leading-none">CricSphere Pro</h3>
+                                <p className="text-[11px] text-blue-100 font-bold mb-8 uppercase tracking-widest opacity-80">Unlock A Premium Experience</p>
                                 
                                 <ul className="space-y-4 mb-10">
                                     <li className="flex items-center gap-3 text-xs font-bold uppercase tracking-tight">
-                                        <CheckCircle2 size={16} className="text-blue-300" /> AI Predictions
+                                        <CheckCircle2 size={16} className="text-blue-300" /> Advanced Analytics
                                     </li>
                                     <li className="flex items-center gap-3 text-xs font-bold uppercase tracking-tight">
-                                        <ShieldCheck size={16} className="text-blue-300" /> Ad-Free Analytics
+                                        <ShieldCheck size={16} className="text-blue-300" /> Ad-Free Experience
                                     </li>
                                 </ul>
 
@@ -218,7 +218,7 @@ const TrendingBar = () => (
                 <TrendingUp size={14} /> Global Threads
             </span>
             <div className="flex gap-6 overflow-x-auto no-scrollbar py-1">
-                {['#BGT2026', '#IPL_Retention', '#KohliStatus', '#WTC_Final'].map(tag => (
+                {['#WPL2026', '#IPLRetentions', '#ViratKohli', '#T20WorldCup2026'].map(tag => (
                     <span key={tag} className="text-[11px] font-bold text-slate-500 hover:text-blue-500 cursor-pointer whitespace-nowrap transition-colors">{tag}</span>
                 ))}
             </div>

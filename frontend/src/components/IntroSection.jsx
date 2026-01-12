@@ -128,7 +128,7 @@ export default function IntroSection() {
             </p>
 
             <div className="flex flex-wrap gap-3 mb-10">
-              {["Live Scores", "CRR & RRR", "Match Analytics", "Shareable Scorecards"].map(f => (
+              {["Live Scores", "CRR & RRR", "Match Analytics", "Updated Schedules"].map(f => (
                 <span key={f} className="px-4 py-1 bg-white/10 rounded-full text-xs">{f}</span>
               ))}
             </div>
