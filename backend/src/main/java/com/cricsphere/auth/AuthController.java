@@ -38,6 +38,9 @@ public class AuthController {
         this.jwtUtils = jwtUtils;
     }
 
+    /* =========================
+       REGISTER
+    ========================== */
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterDto registerDto) {
         log.info("Attempting to register user: {}", registerDto.getUsername());
@@ -45,35 +48,37 @@ public class AuthController {
         if (userRepository.existsByUsername(registerDto.getUsername())) {
             return ResponseEntity
                     .badRequest()
-                    .body(Map.of("message", "Error: Username is already taken!"));
+                    .body(Map.of("message", "Username already exists"));
         }
 
         if (userRepository.existsByEmail(registerDto.getEmail())) {
             return ResponseEntity
                     .badRequest()
-                    .body(Map.of("message", "Error: Email is already in use!"));
+                    .body(Map.of("message", "Email already in use"));
         }
 
-        // ✅ Using Builder Pattern from Step 3
         User user = User.builder()
                 .username(registerDto.getUsername())
                 .email(registerDto.getEmail())
                 .password(passwordEncoder.encode(registerDto.getPassword()))
-                .role("USER") // Our User entity logic handles the "ROLE_" prefix
+                .role("USER")
                 .favoriteTeam(registerDto.getFavoriteTeam())
                 .build();
 
         userRepository.save(user);
         log.info("User registered successfully: {}", user.getUsername());
 
-        return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
+        return ResponseEntity.ok(Map.of("message", "User registered successfully"));
     }
 
+    /* =========================
+       LOGIN (PRODUCTION GRADE)
+    ========================== */
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginDto loginDto) {
         try {
             log.info("Login attempt for user: {}", loginDto.getUsername());
-            
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginDto.getUsername(),
@@ -82,16 +87,23 @@ public class AuthController {
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
             String jwt = jwtUtils.generateToken(authentication);
 
+            // Fetch full user from DB
+            User user = userRepository.findByUsername(loginDto.getUsername())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Never expose password
+            user.setPassword(null);
+
             return ResponseEntity.ok(Map.of(
-                "token", jwt,
-                "type", "Bearer",
-                "username", loginDto.getUsername()
+                    "token", jwt,
+                    "user", user
             ));
 
         } catch (BadCredentialsException e) {
-            log.warn("Failed login attempt for user: {}", loginDto.getUsername());
+            log.warn("Invalid login for user: {}", loginDto.getUsername());
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Invalid username or password"));
