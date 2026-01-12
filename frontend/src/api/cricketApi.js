@@ -9,7 +9,7 @@ const api = axios.create({
    Attach JWT to every request
 -------------------------------- */
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");   // 🔥 MUST match AuthContext
+  const token = localStorage.getItem("token"); // must match AuthContext
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -55,24 +55,11 @@ export const getNews = () => api.get("/api/v1/cricket/news");
 export const getNewsDetail = (id) =>
   api.get(`/api/v1/cricket/news/${id}`);
 
-// =========================
+// ==============================
 // MATCH CENTER
-// =========================
-
-export const getMatchDetails = (matchId) =>
-  api.get(`/api/v1/cricket/match/${matchId}`);
-
-export const getScorecard = (matchId) =>
-  api.get(`/api/v1/cricket/scorecard/${matchId}`);
-
-export const getCommentary = (matchId) =>
-  api.get(`/api/v1/cricket/commentary/${matchId}`);
-
-// ==============================
-// MATCH DETAILS
 // ==============================
 
-export const getMatchInfo = (matchId) =>
+export const getMatch = (matchId) =>
   api.get(`/api/v1/cricket/match/${matchId}`);
 
 export const getScorecard = (matchId) =>
