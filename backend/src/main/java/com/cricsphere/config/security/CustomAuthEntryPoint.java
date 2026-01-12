@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@Component
+//@Component
 public class CustomAuthEntryPoint implements AuthenticationEntryPoint {
 
     @Override
