@@ -20,7 +20,7 @@ import java.io.IOException;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor // ✅ Replaces manual constructor for dependency injection
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
@@ -29,43 +29,50 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        String path = request.getServletPath();
+
+        // 🔥 Skip JWT for public APIs
+        if (path.startsWith("/api/v1/auth") || path.startsWith("/api/v1/cricket")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
-            // 1. Extract JWT from the Authorization header
             String token = getJwtFromRequest(request);
 
-            // 2. Validate token and authenticate
             if (StringUtils.hasText(token) && jwtUtils.validateToken(token)) {
-                
                 String username = jwtUtils.getUsernameFromToken(token);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                UsernamePasswordAuthenticationToken authentication = 
-                    new UsernamePasswordAuthenticationToken(
-                        userDetails, 
-                        null, 
-                        userDetails.getAuthorities()
-                    );
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
 
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                
-                // 3. Set the Security Context
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                
-                log.debug("Successfully authenticated user: {}", username);
+                log.debug("Authenticated user: {}", username);
             }
+
         } catch (Exception e) {
-            log.error("Cannot set user authentication: {}", e.getMessage());
+            log.error("JWT auth error: {}", e.getMessage());
         }
 
-        // 4. Continue to the next filter
         filterChain.doFilter(request, response);
     }
 
     private String getJwtFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+        String bearer = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
+            return bearer.substring(7);
         }
         return null;
     }
