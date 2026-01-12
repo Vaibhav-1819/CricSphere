@@ -14,29 +14,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-//@Component
+@Component
 public class CustomAuthEntryPoint implements AuthenticationEntryPoint {
 
     @Override
-    public void commence(HttpServletRequest request, 
-                         HttpServletResponse response, 
+    public void commence(HttpServletRequest request,
+                         HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
-        
-        // Log the unauthorized access attempt for debugging
-        log.warn("Unauthorized access attempt: {} at path: {}", authException.getMessage(), request.getServletPath());
-        
-        // Set the response header to JSON
+
+        log.warn("Unauthorized access attempt: {} at path: {}",
+                authException.getMessage(), request.getServletPath());
+
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-        final Map<String, Object> body = new HashMap<>();
-        body.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", 401);
         body.put("error", "Unauthorized");
-        body.put("message", authException.getMessage());
+        body.put("message", "Authentication required");
         body.put("path", request.getServletPath());
 
-        // Convert the Map to JSON and write to response
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(response.getOutputStream(), body);
+        new ObjectMapper().writeValue(response.getOutputStream(), body);
     }
 }

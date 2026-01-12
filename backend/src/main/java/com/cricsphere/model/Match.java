@@ -1,15 +1,16 @@
 package com.cricsphere.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.List;
 
-@Slf4j
+/**
+ * Pure DTO for Cricbuzz match JSON.
+ * No logic, no computation, no status interpretation.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,43 +18,67 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Match {
 
-    @JsonProperty("id")
-    private String id;
+    @JsonProperty("matchId")
+    private String matchId;
 
-    @JsonProperty("name")
-    private String name;
+    @JsonProperty("matchDesc")
+    private String matchDesc;
 
-    @JsonProperty("matchType")
-    private String matchType; 
+    @JsonProperty("matchFormat")
+    private String matchFormat;
 
     @JsonProperty("status")
-    private String status; 
+    private String status;
 
-    @JsonProperty("venue")
-    private String venue;
+    @JsonProperty("venueInfo")
+    private VenueInfo venueInfo;
 
-    @JsonProperty("date")
-    private String date;
+    @JsonProperty("team1")
+    private Team team1;
 
-    @JsonProperty("dateTimeGMT")
-    private String dateTimeGMT;
+    @JsonProperty("team2")
+    private Team team2;
 
-    @JsonProperty("teams")
-    private List<String> teams; 
+    @JsonProperty("matchScore")
+    private MatchScore matchScore;
 
-    @JsonProperty("score")
-    private List<Score> score; 
+    /* ===================== Nested DTOs ===================== */
 
-    /**
-     * Helper to check if the match is currently live.
-     * Expanded to catch more common live status indicators.
-     */
-    public boolean isLive() {
-        if (status == null) return false;
-        String lowerStatus = status.toLowerCase();
-        return lowerStatus.contains("live") || 
-               lowerStatus.contains("started") || 
-               lowerStatus.contains("innings break") ||
-               lowerStatus.contains("over");
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class VenueInfo {
+        private String ground;
+        private String city;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Team {
+        private String teamName;
+        private String teamSName;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class MatchScore {
+        private TeamScore team1Score;
+        private TeamScore team2Score;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class TeamScore {
+        @JsonProperty("inngs1")
+        private Inning inning1;
+        @JsonProperty("inngs2")
+        private Inning inning2;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Inning {
+        private String runs;
+        private String wickets;
+        private String overs;
     }
 }

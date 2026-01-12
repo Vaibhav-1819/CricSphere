@@ -75,38 +75,41 @@ public class AuthController {
        LOGIN (PRODUCTION GRADE)
     ========================== */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginDto loginDto) {
-        try {
-            log.info("Login attempt for user: {}", loginDto.getUsername());
+public ResponseEntity<?> login(@Valid @RequestBody LoginDto loginDto) {
+    try {
+        log.info("Login attempt for user: {}", loginDto.getUsername());
 
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginDto.getUsername(),
-                            loginDto.getPassword()
-                    )
-            );
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginDto.getUsername(),
+                        loginDto.getPassword()
+                )
+        );
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String jwt = jwtUtils.generateToken(authentication);
+        String jwt = jwtUtils.generateToken(authentication);
 
-            // Fetch full user from DB
-            User user = userRepository.findByUsername(loginDto.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByUsername(loginDto.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Never expose password
-            user.setPassword(null);
+        AuthUserResponse safeUser = AuthUserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .favoriteTeam(user.getFavoriteTeam())
+                .build();
 
-            return ResponseEntity.ok(Map.of(
-                    "token", jwt,
-                    "user", user
-            ));
+        return ResponseEntity.ok(Map.of(
+                "token", jwt,
+                "user", safeUser
+        ));
 
-        } catch (BadCredentialsException e) {
-            log.warn("Invalid login for user: {}", loginDto.getUsername());
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid username or password"));
-        }
+    } catch (BadCredentialsException e) {
+        log.warn("Invalid login for user: {}", loginDto.getUsername());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", "Invalid username or password"));
     }
 }

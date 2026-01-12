@@ -8,45 +8,47 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor // ✅ Replaces manual constructor
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
 
     /**
-     * Retrieves user details and converts them to a DTO for the frontend.
+     * Returns the logged-in user's profile.
      */
     public UserProfileDto getUserProfile(String username) {
         log.debug("Fetching profile for user: {}", username);
-        
+
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-        
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found: " + username)
+                );
+
         return mapToDto(user);
     }
 
     /**
-     * Updates specific user preferences. 
+     * Updates only allowed profile fields.
      */
     @Transactional
-    public UserProfileDto updateUserProfile(String username, UserProfileDto updateData) {
+    public UserProfileDto updateUserProfile(String username, UserProfileUpdateDto updateData) {
         log.info("Processing profile update for user: {}", username);
-        
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        // Update specific allowed fields
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found: " + username)
+                );
+
+        // Only editable field
         if (updateData.getFavoriteTeam() != null) {
             user.setFavoriteTeam(updateData.getFavoriteTeam());
-            log.debug("User {} updated favorite team to: {}", username, updateData.getFavoriteTeam());
         }
 
-        User savedUser = userRepository.save(user);
-        return mapToDto(savedUser);
+        return mapToDto(user);
     }
 
     /**
-     * Helper method using the Builder pattern established in Step 2 & 3.
+     * Entity → DTO mapping
      */
     private UserProfileDto mapToDto(User user) {
         return UserProfileDto.builder()

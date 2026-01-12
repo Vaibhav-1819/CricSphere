@@ -1,5 +1,6 @@
 package com.cricsphere.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +14,12 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Entity
-@Table(name = "users")
+@Table(
+    name = "users",
+    indexes = {
+        @Index(name = "idx_users_email", columnList = "email")
+    }
+)
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,6 +33,7 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String username;
 
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
@@ -40,42 +47,14 @@ public class User implements UserDetails {
     @Column(name = "favorite_team")
     private String favoriteTeam;
 
-    // --- UserDetails Methods ---
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Logic: Ensures Spring Security always sees "ROLE_USER" or "ROLE_ADMIN"
         String formattedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
         return Collections.singletonList(new SimpleGrantedAuthority(formattedRole));
     }
 
-    @Override
-    public String getPassword() {
-        return this.password;
-    }
-
-    @Override
-    public String getUsername() {
-        return this.username;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return true; }
 }

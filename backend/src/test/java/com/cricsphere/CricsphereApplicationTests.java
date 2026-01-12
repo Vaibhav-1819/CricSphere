@@ -2,15 +2,17 @@ package com.cricsphere;
 
 import com.cricsphere.user.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class UserProfileTest {
 
     @Mock
@@ -21,7 +23,7 @@ class UserProfileTest {
 
     @Test
     void testGetProfileMapping() {
-        // Arrange: Create a fake user in the database
+        // Arrange
         User mockUser = User.builder()
                 .username("cricket_fan")
                 .email("test@cricsphere.com")
@@ -29,13 +31,16 @@ class UserProfileTest {
                 .role("USER")
                 .build();
 
-        when(userRepository.findByUsername("cricket_fan")).thenReturn(Optional.of(mockUser));
+        when(userRepository.findByUsername("cricket_fan"))
+                .thenReturn(Optional.of(mockUser));
 
-        // Act: Call the service
+        // Act
         UserProfileDto result = userService.getUserProfile("cricket_fan");
 
-        // Assert: Verify the mapping logic works
+        // Assert
         assertEquals("India", result.getFavoriteTeam());
         assertEquals("cricket_fan", result.getUsername());
+        assertEquals("test@cricsphere.com", result.getEmail());
+        assertEquals("USER", result.getRole());
     }
 }

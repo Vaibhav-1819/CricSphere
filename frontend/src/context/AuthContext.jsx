@@ -1,9 +1,8 @@
-import React, { createContext, useState, useContext, useEffect, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 const AuthContext = createContext(null);
-
-const API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth`;
+const API = import.meta.env.VITE_API_BASE_URL;
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
@@ -11,21 +10,23 @@ export const AuthProvider = ({ children }) => {
     const saved = localStorage.getItem("user");
     return saved ? JSON.parse(saved) : null;
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  /* ----------------------------------------
-     Attach token to every axios request
-  ----------------------------------------- */
+  const [loading, setLoading] = useState(false);
+
+  /* --------------------------------
+     Attach token to axios globally
+  --------------------------------- */
   useEffect(() => {
-    axios.defaults.headers.common["Authorization"] = token
-      ? `Bearer ${token}`
-      : "";
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common["Authorization"];
+    }
   }, [token]);
 
-  /* ----------------------------------------
-     Auto logout if token expires
-  ----------------------------------------- */
+  /* --------------------------------
+     Auto logout on 401
+  --------------------------------- */
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
       (res) => res,
@@ -39,16 +40,18 @@ export const AuthProvider = ({ children }) => {
     return () => axios.interceptors.response.eject(interceptor);
   }, []);
 
-  /* ----------------------------------------
-     Login
-  ----------------------------------------- */
-  const login = async (username, password) => {
+  /* --------------------------------
+     LOGIN
+  --------------------------------- */
+  const login = async ({ username, password }) => {
     setLoading(true);
-    setError(null);
     try {
-      const res = await axios.post(`${API_URL}/login`, { username, password });
+      const res = await axios.post(`${API}/api/v1/auth/login`, {
+        username,
+        password,
+      });
 
-      const { token, user } = res.data;   // BACKEND SHOULD RETURN BOTH
+      const { token, user } = res.data;
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
@@ -56,44 +59,36 @@ export const AuthProvider = ({ children }) => {
       setToken(token);
       setUser(user);
 
-      return { success: true };
-    } catch (err) {
-      const msg =
-        err.response?.data?.message || "Invalid credentials or server offline.";
-      setError(msg);
-      return { success: false, message: msg };
+      return res.data;
     } finally {
       setLoading(false);
     }
   };
 
-  /* ----------------------------------------
-     Register
-  ----------------------------------------- */
-  const register = async (username, email, password) => {
+  /* --------------------------------
+     REGISTER
+  --------------------------------- */
+  const register = async ({ username, email, password }) => {
     setLoading(true);
-    setError(null);
     try {
-      await axios.post(`${API_URL}/register`, { username, email, password });
-      return await login(username, password);
-    } catch (err) {
-      const msg =
-        err.response?.data?.message || "Registration failed.";
-      setError(msg);
-      return { success: false, message: msg };
+      await axios.post(`${API}/api/v1/auth/register`, {
+        username,
+        email,
+        password,
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  /* ----------------------------------------
-     Logout
-  ----------------------------------------- */
+  /* --------------------------------
+     LOGOUT
+  --------------------------------- */
   const logout = () => {
-    setToken(null);
-    setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    setToken(null);
+    setUser(null);
     delete axios.defaults.headers.common["Authorization"];
   };
 
@@ -102,13 +97,12 @@ export const AuthProvider = ({ children }) => {
       token,
       user,
       isAuthenticated: !!token,
-      loading,
-      error,
       login,
       register,
       logout,
+      loading,
     }),
-    [token, user, loading, error]
+    [token, user, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -116,6 +110,6 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 };

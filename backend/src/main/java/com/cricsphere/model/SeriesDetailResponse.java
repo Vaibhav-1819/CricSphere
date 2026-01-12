@@ -1,14 +1,15 @@
 package com.cricsphere.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@Slf4j
+/**
+ * Raw DTO for CricAPI series detail response.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,16 +22,4 @@ public class SeriesDetailResponse {
 
     @JsonProperty("data")
     private SeriesDetail data;
-
-    /**
-     * Helper to verify if the series data was successfully retrieved.
-     * Logs a warning if the API call was not successful.
-     */
-    public boolean isSuccess() {
-        boolean success = "success".equalsIgnoreCase(status) && data != null;
-        if (!success) {
-            log.warn("Series detail retrieval failed or returned null data. Status: {}", status);
-        }
-        return success;
-    }
 }

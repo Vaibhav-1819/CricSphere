@@ -1,14 +1,17 @@
 package com.cricsphere.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.ArrayList;
+
 import java.util.List;
 
+/**
+ * Pure DTO for CricAPI Series Detail.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -37,7 +40,6 @@ public class SeriesDetail {
     @JsonProperty("test")
     private int test;
 
-    @Builder.Default
     @JsonProperty("matchList")
-    private List<Match> matchList = new ArrayList<>();
+    private List<Match> matchList;
 }

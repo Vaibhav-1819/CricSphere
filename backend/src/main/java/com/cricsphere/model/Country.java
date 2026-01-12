@@ -1,19 +1,21 @@
 package com.cricsphere.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@Slf4j
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true) 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Country {
 
     @JsonProperty("id")
@@ -22,18 +24,34 @@ public class Country {
     @JsonProperty("name")
     private String name;
 
+    /**
+     * Raw value coming from CricAPI.
+     * Can be:
+     * - full URL
+     * - filename like "india.png"
+     */
     @JsonProperty("genericFlag")
     private String genericFlag;
-    
+
     /**
-     * Helper to get the full URL if genericFlag only contains the image name.
-     * Log a warning if the flag is missing to help with frontend UI debugging.
+     * Computed absolute flag URL.
+     * Exposed to frontend but never read from input JSON.
      */
+    @JsonProperty(value = "flagUrl", access = Access.READ_ONLY)
     public String getFlagUrl() {
-        if (genericFlag == null) {
-            log.warn("Flag missing for country: {}", name);
+        if (genericFlag == null || genericFlag.isBlank()) {
             return null;
         }
-        return "https://static.cricsphere.com/flags/" + genericFlag;
+
+        // Already a full URL
+        if (genericFlag.startsWith("http")) {
+            return genericFlag;
+        }
+
+        // Encode filename to avoid spaces & special chars breaking URLs
+        String safeFile = URLEncoder.encode(genericFlag, StandardCharsets.UTF_8);
+
+        // CricAPI CDN
+        return "https://api.cricapi.com/v1/img/flags/" + safeFile;
     }
 }

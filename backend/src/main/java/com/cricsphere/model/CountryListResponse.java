@@ -1,15 +1,18 @@
 package com.cricsphere.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
-@Slf4j
+/**
+ * Raw DTO for CricAPI country list response.
+ * This class must stay pure (no logging, no logic).
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,15 +26,17 @@ public class CountryListResponse {
     @JsonProperty("data")
     private List<Country> data;
 
+    @JsonProperty("info")
+    private ApiInfo info;
+
     /**
-     * Helper method to check if the API call was successful.
-     * Logs a warning if the status is success but the list is null.
+     * Metadata returned by CricAPI.
      */
-    public boolean isSuccess() {
-        boolean success = "success".equalsIgnoreCase(this.status) || "ok".equalsIgnoreCase(this.status);
-        if (success && data == null) {
-            log.warn("API returned success status but null data list.");
-        }
-        return success;
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ApiInfo {
+        private Integer hitsToday;
+        private Integer hitsUsed;
+        private Integer hitsLimit;
     }
 }

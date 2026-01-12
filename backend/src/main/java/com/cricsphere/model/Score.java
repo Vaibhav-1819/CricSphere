@@ -1,16 +1,20 @@
 package com.cricsphere.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Pure DTO for Cricbuzz score.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Score {
+
     @JsonProperty("r")
     private int runs;
 
@@ -22,12 +26,4 @@ public class Score {
 
     @JsonProperty("inning")
     private String inning;
-
-    /**
-     * Helper to display the score in a standard cricket format.
-     * Example: "182/4 (19.2 ov)"
-     */
-    public String getDisplayScore() {
-        return String.format("%d/%d (%s ov)", runs, wickets, overs);
-    }
 }

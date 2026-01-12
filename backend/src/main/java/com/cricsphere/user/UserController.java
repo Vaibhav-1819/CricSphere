@@ -2,6 +2,7 @@ package com.cricsphere.user;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -21,29 +22,32 @@ public class UserController {
     public ResponseEntity<UserProfileDto> getProfile() {
         String username = getCurrentUsername();
         log.info("Fetching profile for user: {}", username);
-        
-        UserProfileDto profile = userService.getUserProfile(username);
-        return ResponseEntity.ok(profile);
+
+        return ResponseEntity.ok(userService.getUserProfile(username));
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<UserProfileDto> updateProfile(@RequestBody UserProfileDto updateData) {
+    public ResponseEntity<UserProfileDto> updateProfile(
+            @RequestBody UserProfileUpdateDto updateData) {
+
         String username = getCurrentUsername();
         log.info("Updating profile for user: {}", username);
-        
-        UserProfileDto updatedProfile = userService.updateUserProfile(username, updateData);
-        return ResponseEntity.ok(updatedProfile);
+
+        return ResponseEntity.ok(
+                userService.updateUserProfile(username, updateData)
+        );
     }
 
     /**
-     * Helper to extract the username from the SecurityContext.
+     * Securely extract username from JWT-authenticated context.
      */
     private String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            log.error("Security Context violation: No authenticated user found");
-            throw new RuntimeException("No authenticated user found");
+
+        if (authentication == null || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new AccessDeniedException("Unauthorized");
         }
+
         return authentication.getName();
     }
 }

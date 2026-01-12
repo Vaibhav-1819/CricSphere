@@ -1,14 +1,16 @@
 package com.cricsphere.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@Slf4j
+/**
+ * Pure DTO for Cricbuzz Player.
+ * No computed fields, no logic, no formatting.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -26,24 +28,14 @@ public class Player {
     private String country;
 
     @JsonProperty("role")
-    private String role; 
+    private String role;
 
     @JsonProperty("battingStyle")
-    private String battingStyle; 
+    private String battingStyle;
 
     @JsonProperty("bowlingStyle")
-    private String bowlingStyle; 
+    private String bowlingStyle;
 
-    @JsonProperty("faceImage")
-    private String faceImage; 
-
-    /**
-     * Helper to return a placeholder image if the faceImage is null.
-     */
-    public String getSafeFaceImage() {
-        if (faceImage == null || faceImage.isEmpty()) {
-            return "https://static.cricsphere.com/placeholders/player-placeholder.png";
-        }
-        return faceImage;
-    }
+    @JsonProperty("faceImageId")
+    private String faceImageId;
 }

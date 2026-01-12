@@ -1,14 +1,15 @@
 package com.cricsphere.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@Slf4j
+/**
+ * Pure DTO for CricAPI / Cricbuzz series data.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -42,17 +43,4 @@ public class Series {
 
     @JsonProperty("matches")
     private int matches;
-
-    /**
-     * Helper to get total matches. 
-     * Prioritizes the 'matches' field from API, falls back to sum of formats.
-     */
-    public int getTotalMatchCount() {
-        if (matches > 0) return matches;
-        int calculated = t20 + odi + test;
-        if (calculated == 0) {
-            log.debug("No matches found for series: {}", name);
-        }
-        return calculated;
-    }
 }

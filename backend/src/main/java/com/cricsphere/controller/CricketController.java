@@ -1,6 +1,5 @@
 package com.cricsphere.controller;
 
-import com.cricsphere.model.*;
 import com.cricsphere.service.CricketService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,43 +16,106 @@ public class CricketController {
         this.cricketService = cricketService;
     }
 
-    @GetMapping("/current-matches")
-    public ResponseEntity<CurrentMatchesResponse> getCurrentMatches() {
-        log.info("Request received: Fetching live matches from cache");
-        return ResponseEntity.ok(cricketService.getCurrentMatches());
+    /* =========================================================
+       LIVE / UPCOMING / RECENT
+    ========================================================= */
+
+    @GetMapping("/live")
+    public ResponseEntity<String> getLiveMatches() {
+        log.info("GET /live");
+        return ResponseEntity.ok(cricketService.getLiveMatches());
     }
 
+    @GetMapping("/upcoming")
+    public ResponseEntity<String> getUpcomingMatches() {
+        log.info("GET /upcoming");
+        return ResponseEntity.ok(cricketService.getUpcomingMatches());
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<String> getRecentMatches() {
+        log.info("GET /recent");
+        return ResponseEntity.ok(cricketService.getRecentMatches());
+    }
+
+    /* =========================================================
+       MATCH DATA
+    ========================================================= */
+
+    @GetMapping("/match/{matchId}")
+    public ResponseEntity<String> getMatchInfo(@PathVariable String matchId) {
+        return ResponseEntity.ok(cricketService.getMatchInfo(matchId));
+    }
+
+    @GetMapping("/scorecard/{matchId}")
+    public ResponseEntity<String> getScorecard(@PathVariable String matchId) {
+        return ResponseEntity.ok(cricketService.getScorecard(matchId));
+    }
+
+    @GetMapping("/commentary/{matchId}")
+    public ResponseEntity<String> getCommentary(@PathVariable String matchId) {
+        return ResponseEntity.ok(cricketService.getCommentary(matchId));
+    }
+
+    @GetMapping("/squads/{matchId}")
+    public ResponseEntity<String> getSquads(@PathVariable String matchId) {
+        return ResponseEntity.ok(cricketService.getSquads(matchId));
+    }
+
+    @GetMapping("/overs/{matchId}")
+    public ResponseEntity<String> getOvers(@PathVariable String matchId) {
+        return ResponseEntity.ok(cricketService.getOvers(matchId));
+    }
+
+    /* =========================================================
+       SERIES / STATS
+    ========================================================= */
+
     @GetMapping("/series")
-    public ResponseEntity<SeriesListResponse> getSeriesList() {
-        log.info("Request received: Fetching series list");
+    public ResponseEntity<?> getSeries() {
         return ResponseEntity.ok(cricketService.getSeriesList());
     }
 
-    @GetMapping("/countries")
-    public ResponseEntity<CountryListResponse> getCountryList() {
-        return ResponseEntity.ok(cricketService.getCountryList());
-    }
-
-    @GetMapping("/players")
-    public ResponseEntity<PlayerListResponse> getPlayerList() {
-        return ResponseEntity.ok(cricketService.getPlayerList());
-    }
-
     @GetMapping("/series/{seriesId}")
-    public ResponseEntity<SeriesDetailResponse> getSeriesDetail(@PathVariable String seriesId) {
-        log.info("Request received: Fetching details for series ID: {}", seriesId);
-        SeriesDetailResponse response = cricketService.getSeriesDetail(seriesId);
-        
-        if (response == null) {
-            log.warn("Series detail not found for ID: {}", seriesId);
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> getSeriesDetail(@PathVariable String seriesId) {
+        return ResponseEntity.ok(cricketService.getSeriesDetail(seriesId));
     }
-    
-    @GetMapping("/news-feed")
-    public ResponseEntity<NewsAggregationResponse> getNewsFeed() {
-        log.info("Request received: Fetching news feed");
-        return ResponseEntity.ok(cricketService.getNewsFeed());
+
+    @GetMapping("/rankings")
+    public ResponseEntity<String> getRankings() {
+        return ResponseEntity.ok(cricketService.getRankings());
+    }
+
+    /* =========================================================
+       TEAMS / PLAYERS / VENUES
+    ========================================================= */
+
+    @GetMapping("/teams/{type}")
+    public ResponseEntity<String> getTeams(@PathVariable String type) {
+        return ResponseEntity.ok(cricketService.getTeams(type));
+    }
+
+    @GetMapping("/player/{playerId}")
+    public ResponseEntity<String> getPlayer(@PathVariable String playerId) {
+        return ResponseEntity.ok(cricketService.getPlayerInfo(playerId));
+    }
+
+    @GetMapping("/venue/{venueId}")
+    public ResponseEntity<String> getVenue(@PathVariable String venueId) {
+        return ResponseEntity.ok(cricketService.getVenueInfo(venueId));
+    }
+
+    /* =========================================================
+       NEWS
+    ========================================================= */
+
+    @GetMapping("/news")
+    public ResponseEntity<String> getNews() {
+        return ResponseEntity.ok(cricketService.getNews());
+    }
+
+    @GetMapping("/news/{id}")
+    public ResponseEntity<String> getNewsDetails(@PathVariable String id) {
+        return ResponseEntity.ok(cricketService.getNewsDetails(id));
     }
 }
