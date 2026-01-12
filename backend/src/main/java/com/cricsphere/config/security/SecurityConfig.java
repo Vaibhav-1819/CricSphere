@@ -9,7 +9,6 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,24 +26,27 @@ import java.util.List;
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
-    private final CustomAuthEntryPoint customAuthEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     public SecurityConfig(
             UserDetailsService userDetailsService,
-            CustomAuthEntryPoint customAuthEntryPoint,
             JwtAuthenticationFilter jwtAuthenticationFilter
     ) {
         this.userDetailsService = userDetailsService;
-        this.customAuthEntryPoint = customAuthEntryPoint;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
+    /* ===========================
+       PASSWORD ENCODER
+    ============================ */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /* ===========================
+       AUTH PROVIDER
+    ============================ */
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -53,40 +55,47 @@ public class SecurityConfig {
         return provider;
     }
 
+    /* ===========================
+       AUTH MANAGER
+    ============================ */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    /* ===========================
+       SECURITY FILTER CHAIN
+    ============================ */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthEntryPoint))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/v1/auth/**",
-                                "/api/v1/cricket/**"
-                        ).permitAll()
+                        // 🔥 PUBLIC ROUTES
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/cricket/**").permitAll()
+
+                        // 🔐 EVERYTHING ELSE NEEDS JWT
                         .anyRequest().authenticated()
                 )
+
+                // JWT filter only applies to protected routes
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    /**
-     * ✅ Corrected: Only one @Bean annotation here.
-     * This allows Vercel frontend to communicate with your Render backend.
-     */
+    /* ===========================
+       CORS CONFIG
+    ============================ */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allows local development and any Vercel deployment
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "https://*.vercel.app"
