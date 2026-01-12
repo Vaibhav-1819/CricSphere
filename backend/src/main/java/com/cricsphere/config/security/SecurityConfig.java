@@ -3,6 +3,7 @@ package com.cricsphere.config.security;
 import com.cricsphere.config.security.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -34,11 +35,17 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
+    // =========================
+    // Password encoder
+    // =========================
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // =========================
+    // Auth provider
+    // =========================
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -52,31 +59,42 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    // =========================
+    // PUBLIC APIs — NO JWT
+    // =========================
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain publicFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/api/v1/auth/**", "/api/v1/cricket/**")
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        return http.build();
+    }
+
+    // =========================
+    // PROTECTED APIs — JWT REQUIRED
+    // =========================
+    @Bean
+    @Order(2)
+    public SecurityFilterChain protectedFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-            .authorizeHttpRequests(auth -> auth
-                // 🔥 VERY IMPORTANT: Allow CORS preflight
-                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-
-                // 🔥 Public endpoints
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers("/api/v1/cricket/**").permitAll()
-
-                // 🔐 Everything else needs JWT
-                .anyRequest().authenticated()
-            )
-
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    // =========================
+    // CORS
+    // =========================
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
