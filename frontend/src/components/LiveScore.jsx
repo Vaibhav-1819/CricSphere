@@ -6,7 +6,7 @@ import {
   RefreshCcw,
   AlertCircle
 } from "lucide-react";
-import { getLiveMatches } from "../services/api";
+import { getLiveMatches } from "../api/cricketApi";
 
 /* =========================
    Helpers
