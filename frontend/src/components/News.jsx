@@ -8,6 +8,21 @@ import useFetch from "../hooks/useFetch";
 
 /* ===================== */
 
+const normalize = (n) => {
+  // Works with both backend-normalized & raw Cricbuzz
+  const s = n.story || n;
+
+  return {
+    id: s.id,
+    title: s.title || s.hline,
+    description: s.description || s.intro,
+    imageUrl: s.imageUrl || (s.imageId ? `https://www.cricbuzz.com/a/img/v1/600x400/i1/${s.imageId}.jpg` : null),
+    source: s.source || "Cricbuzz",
+    publishedAt: s.publishedAt || s.pubTime,
+    url: s.url || `https://www.cricbuzz.com/cricket-news/${s.id}`
+  };
+};
+
 export default function News() {
   const { data, loading } = useFetch("/api/v1/cricket/news");
 
@@ -16,7 +31,7 @@ export default function News() {
   const [search, setSearch] = useState("");
   const [bookmarks, setBookmarks] = useState([]);
 
-  const articles = data?.data || [];
+  const articles = (data?.data || []).map(normalize);
 
   const processedNews = useMemo(() => {
     return articles.filter(item => {
@@ -25,7 +40,7 @@ export default function News() {
         (activeTab === "Saved" && bookmarks.includes(item.id));
 
       const matchSearch =
-        item.title.toLowerCase().includes(search.toLowerCase());
+        item.title?.toLowerCase().includes(search.toLowerCase());
 
       return matchTab && matchSearch;
     });
@@ -91,10 +106,7 @@ export default function News() {
           ))}
         </div>
 
-        {/* Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-          {/* Feed */}
           <div className="lg:col-span-2 space-y-6">
             {loading && <p className="text-slate-400">Loading news...</p>}
             <AnimatePresence>
@@ -110,7 +122,6 @@ export default function News() {
             </AnimatePresence>
           </div>
 
-          {/* Sidebar */}
           <aside className="hidden lg:block">
             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6">
               <h3 className="text-sm font-black mb-6 flex items-center gap-2">
@@ -123,7 +134,6 @@ export default function News() {
               ))}
             </div>
           </aside>
-
         </div>
       </div>
     </div>
@@ -136,17 +146,10 @@ const NewsItem = ({ data, viewMode, isBookmarked, onBookmark }) => {
   const isList = viewMode === "list";
 
   return (
-    <motion.div
-      layout
-      className={`bg-white dark:bg-slate-800 rounded-3xl border overflow-hidden ${
-        isList ? "flex" : "block"
-      }`}
-    >
-      <img
-        src={data.imageUrl}
-        alt=""
-        className={`object-cover ${isList ? "w-72 h-full" : "w-full h-52"}`}
-      />
+    <motion.div layout className={`bg-white dark:bg-slate-800 rounded-3xl border overflow-hidden ${isList ? "flex" : "block"}`}>
+      {data.imageUrl && (
+        <img src={data.imageUrl} className={`object-cover ${isList ? "w-72 h-full" : "w-full h-52"}`} />
+      )}
 
       <div className="p-6 flex flex-col flex-1">
         <div className="flex justify-between">
@@ -165,7 +168,9 @@ const NewsItem = ({ data, viewMode, isBookmarked, onBookmark }) => {
         </p>
 
         <div className="mt-auto flex justify-between pt-4 text-xs text-slate-400">
-          <span><Clock size={12}/> {new Date(Number(data.publishedAt)).toLocaleDateString()}</span>
+          <span className="flex items-center gap-1">
+            <Clock size={12}/> {new Date(Number(data.publishedAt)).toLocaleDateString()}
+          </span>
           <a href={data.url} target="_blank" className="text-blue-600 flex gap-1">
             Read <ExternalLink size={12} />
           </a>
