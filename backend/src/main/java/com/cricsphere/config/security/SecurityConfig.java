@@ -28,25 +28,17 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(
-            UserDetailsService userDetailsService,
-            JwtAuthenticationFilter jwtAuthenticationFilter
-    ) {
+    public SecurityConfig(UserDetailsService userDetailsService,
+                          JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.userDetailsService = userDetailsService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
-    /* ===========================
-       PASSWORD ENCODER
-    ============================ */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /* ===========================
-       AUTH PROVIDER
-    ============================ */
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -55,43 +47,36 @@ public class SecurityConfig {
         return provider;
     }
 
-    /* ===========================
-       AUTH MANAGER
-    ============================ */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    /* ===========================
-       SECURITY FILTER CHAIN
-    ============================ */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                .authorizeHttpRequests(auth -> auth
-                        // 🔥 PUBLIC ROUTES
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/api/v1/cricket/**").permitAll()
+            .authorizeHttpRequests(auth -> auth
+                // 🔥 VERY IMPORTANT: Allow CORS preflight
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 🔐 EVERYTHING ELSE NEEDS JWT
-                        .anyRequest().authenticated()
-                )
+                // 🔥 Public endpoints
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/cricket/**").permitAll()
 
-                // JWT filter only applies to protected routes
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                // 🔐 Everything else needs JWT
+                .anyRequest().authenticated()
+            )
+
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    /* ===========================
-       CORS CONFIG
-    ============================ */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
