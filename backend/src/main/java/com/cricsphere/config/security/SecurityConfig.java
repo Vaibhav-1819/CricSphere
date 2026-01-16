@@ -3,6 +3,7 @@ package com.cricsphere.config.security;
 import com.cricsphere.config.security.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -20,6 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -60,13 +62,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults()) // Utilizes the corsConfigurationSource bean
+            .cors(Customizer.withDefaults())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authEntryPoint))
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/v1/auth/**").permitAll()
-                    // Allow public GET access to cricket data for the landing page
-                    .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/cricket/**").permitAll()
+                    // 🟢 PUBLIC ACCESS: Allow guests to VIEW all data (GET requests)
+                    .requestMatchers(HttpMethod.GET, "/api/v1/cricket/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/stats/**").permitAll()
+                    // 🔒 SECURE ACCESS: Modifying data requires authentication
                     .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
@@ -78,19 +82,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-
-        // Allows local development and any Vercel preview/production branch
-        config.setAllowedOriginPatterns(List.of(
+        
+        config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
-                "https://*.vercel.app"
+                "https://cricsphere-version1.vercel.app"
         ));
-
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        
+        config.setAllowedOriginPatterns(List.of("https://*.vercel.app"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
-        config.setMaxAge(3600L); // Cache preflight response for 1 hour
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
