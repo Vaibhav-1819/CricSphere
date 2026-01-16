@@ -1,29 +1,30 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Bot, Send, X, Sparkles, MessageSquare, 
-  Zap, Globe, Shield, Activity, Terminal
-} from 'lucide-react';
+import React, { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Bot,
+  Send,
+  X,
+  MessageSquare,
+  Sparkles,
+  Activity,
+} from "lucide-react";
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
+
   const messagesEndRef = useRef(null);
-  const chipsContainerRef = useRef(null);
-  
+
   const [messages, setMessages] = useState([
-    { 
-      id: 1, 
-      text: `Welcome to **CricSphere Intelligence**. 🏏\n\nI am your technical guide. I can explain our **MIS Analytics**, the **Spring Boot** telemetry engine, or our **React 19** architecture. How shall we begin?`, 
-      sender: 'bot' 
-    }
+    {
+      id: 1,
+      sender: "bot",
+      text: "Hi 👋 I’m CricSphere Assistant.\nAsk me about live scores, schedules, stats, or how the app works.",
+    },
   ]);
 
-  const quickChips = [
-    "Architecture? 🛠️", "What is MIS? 📈", "Security 🔒", 
-    "Data Source 📡", "API Status 🟢"
-  ];
+  const quickChips = ["Live Scores", "Schedules", "Stats", "Data Source", "Privacy"];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -31,127 +32,166 @@ const ChatWidget = () => {
 
   const processMessage = (text) => {
     if (!text.trim()) return;
-    setMessages(prev => [...prev, { id: Date.now(), text, sender: 'user' }]);
-    setInputText('');
+
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now(), sender: "user", text },
+    ]);
+
+    setInputText("");
     setIsTyping(true);
 
-    // Simulated Backend Processing Delay
     setTimeout(() => {
-      const response = generateTechnicalResponse(text);
-      setMessages(prev => [...prev, { id: Date.now() + 1, text: response, sender: 'bot' }]);
+      const response = generateResponse(text);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, sender: "bot", text: response },
+      ]);
       setIsTyping(false);
-    }, 1200);
+    }, 850);
   };
 
-  const generateTechnicalResponse = (input) => {
-    const query = input.toLowerCase();
-    
-    if (query.includes('arch') || query.includes('tech') || query.includes('stack')) {
-      return "🛠 **CricSphere Tech Stack:**\n\n• **Core:** Java 21 + Spring Boot 3.2\n• **Security:** Stateless JWT Authentication\n• **State:** React Context API + Axios Interceptors\n• **Animations:** Framer Motion (60fps targets)";
+  const generateResponse = (input) => {
+    const q = input.toLowerCase();
+
+    if (q.includes("live")) {
+      return "CricSphere shows live match updates with a clean scoreboard view.\nWe refresh match data frequently to keep it accurate.";
     }
-    if (query.includes('mis') || query.includes('impact') || query.includes('scoring')) {
-      return "📈 **Impact Analysis (MIS):**\n\nOur engine calculates value using a **Weight-Based Algorithm**. We normalize player performance against **Match Phase**, **Pressure Index**, and **Venue difficulty** to provide a true impact score.";
+    if (q.includes("schedule")) {
+      return "You can browse upcoming matches by series and date.\nThe schedule UI is designed to be simple and fast.";
     }
-    if (query.includes('source') || query.includes('data') || query.includes('api')) {
-      return "📡 **Data Telemetry:**\n\nWe aggregate data from multiple cricket feeds. The **Spring Boot** scheduler polls these sources, normalizes the DTOs, and serves them via our REST endpoints.";
+    if (q.includes("stat")) {
+      return "Stats include team + player insights where available.\nWe keep it minimal so important numbers stand out.";
     }
-    if (query.includes('security') || query.includes('privacy') || query.includes('jwt')) {
-      return "🔒 **Enterprise Security:**\n\nSessions are handled via **HttpOnly cookies** and **JWT**. We implement **Bcrypt** for password hashing and follow strict **CORS** policies to prevent unauthorized data access.";
+    if (q.includes("source") || q.includes("api")) {
+      return "We use trusted cricket data APIs to fetch match info.\nCaching is used to reduce repeated calls and improve speed.";
+    }
+    if (q.includes("privacy")) {
+      return "We don’t sell your data.\nWe only store what’s needed for app functionality (like preferences).";
     }
 
-    return "🏏 I am focused on **CricSphere Technicals**. Try asking about our **MIS Logic**, **Spring Boot Backend**, or **JWT Security** protocols!";
+    return "Got it ✅\nTry: Live Scores, Schedules, Stats, Data Source, or Privacy.";
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[120] flex flex-col items-end gap-3">
+    <div className="fixed bottom-5 right-5 z-[120] flex flex-col items-end gap-3 max-w-[92vw]">
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            initial={{ opacity: 0, y: 18, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            className="w-[360px] md:w-[420px] h-[600px] bg-[#080a0f] rounded-[2.5rem] shadow-2xl border border-white/5 flex flex-col overflow-hidden"
+            exit={{ opacity: 0, y: 18, scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+            className="w-[92vw] max-w-[340px] h-[440px] rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#05070c] shadow-2xl ring-1 ring-black/10 dark:ring-white/10 overflow-hidden flex flex-col"
           >
-            {/* --- HEADER --- */}
-            <div className="p-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <Terminal className="text-white w-6 h-6" />
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-black/10 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/10 flex items-center justify-center">
+                  <Bot size={16} className="text-blue-600 dark:text-blue-400" />
                 </div>
-                <div>
-                  <h3 className="font-black text-white text-sm flex items-center gap-2 uppercase tracking-tight">
-                    Intelligence Bot <Sparkles className="w-3 h-3 text-blue-400 fill-blue-400" />
-                  </h3>
+
+                <div className="leading-tight">
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Protocol Active</span>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                      CricSphere Assistant
+                    </p>
+                    <Sparkles size={13} className="text-slate-400" />
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Online
+                    </p>
                   </div>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
-                <X size={20} />
+
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition"
+                aria-label="Close chat"
+              >
+                <X size={18} className="text-slate-700 dark:text-slate-200" />
               </button>
             </div>
 
-            {/* --- CHAT ENGINE --- */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-transparent no-scrollbar">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
               {messages.map((msg) => (
-                <div key={msg.id} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-auto text-[9px] font-black ${msg.sender === 'user' ? 'bg-white/10 text-slate-400' : 'bg-blue-600 text-white'}`}>
-                    {msg.sender === 'user' ? 'USR' : 'CS'}
-                  </div>
-                  <div className={`max-w-[85%] p-5 rounded-3xl text-xs leading-relaxed ${
-                    msg.sender === 'user' 
-                    ? 'bg-blue-600 text-white rounded-br-none font-bold' 
-                    : 'bg-white/5 text-slate-300 rounded-bl-none border border-white/5'
-                  }`}>
-                    {msg.text.split('\n').map((line, i) => (
-                      <p key={i} className={i !== 0 ? 'mt-3' : ''}>
-                        {line.split('**').map((part, j) => j % 2 === 1 ? <span key={j} className="text-white font-black">{part}</span> : part)}
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed border ${
+                      msg.sender === "user"
+                        ? "bg-slate-900 text-white border-slate-900"
+                        : "bg-white dark:bg-white/5 text-slate-700 dark:text-slate-200 border-black/10 dark:border-white/10"
+                    }`}
+                  >
+                    {msg.text.split("\n").map((line, i) => (
+                      <p key={i} className={i !== 0 ? "mt-2" : ""}>
+                        {line}
                       </p>
                     ))}
                   </div>
                 </div>
               ))}
-              
+
               {isTyping && (
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 mt-auto"><Activity size={14} className="animate-pulse" /></div>
-                  <div className="bg-white/5 px-5 py-4 rounded-3xl rounded-bl-none border border-white/5 flex gap-1.5 items-center">
-                    <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" />
-                    <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                <div className="flex justify-start">
+                  <div className="rounded-2xl px-4 py-3 text-sm border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 flex items-center gap-2">
+                    <Activity
+                      size={16}
+                      className="text-blue-600 dark:text-blue-400 animate-pulse"
+                    />
+                    <span className="text-slate-500 dark:text-slate-400">
+                      Typing...
+                    </span>
                   </div>
                 </div>
               )}
+
               <div ref={messagesEndRef} />
             </div>
 
-            {/* --- INPUT & CHIPS --- */}
-            <div className="p-6 bg-black/40 border-t border-white/5">
-              <div className="flex gap-2 overflow-x-auto no-scrollbar mb-5 px-1">
-                {quickChips.map((chip, idx) => (
-                  <button 
-                    key={idx} 
+            {/* Chips + Input */}
+            <div className="px-4 py-3 border-t border-black/10 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3">
+                {quickChips.map((chip) => (
+                  <button
+                    key={chip}
                     onClick={() => processMessage(chip)}
-                    className="whitespace-nowrap px-4 py-2 rounded-xl bg-white/5 border border-white/5 hover:border-blue-500 text-[10px] font-black text-slate-500 hover:text-white transition-all uppercase tracking-wider"
+                    className="whitespace-nowrap px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition"
                   >
                     {chip}
                   </button>
                 ))}
               </div>
 
-              <form onSubmit={(e) => { e.preventDefault(); processMessage(inputText); }} className="flex gap-3">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  processMessage(inputText);
+                }}
+                className="flex gap-2"
+              >
                 <input
-                  type="text" value={inputText} onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Inquire about system..."
-                  className="flex-1 px-6 py-4 bg-white/5 text-white rounded-2xl border border-white/5 focus:outline-none focus:border-blue-500 transition-all text-xs font-bold"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="Ask something..."
+                  className="flex-1 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#05070c] px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 />
-                <button 
+
+                <button
+                  type="submit"
                   disabled={!inputText.trim()}
-                  className="p-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-500 disabled:opacity-30 transition-all shadow-xl shadow-blue-500/20"
+                  className="rounded-xl px-4 py-3 bg-slate-900 text-white hover:bg-slate-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Send"
                 >
-                  <Send size={18} />
+                  <Send size={16} />
                 </button>
               </form>
             </div>
@@ -159,18 +199,23 @@ const ChatWidget = () => {
         )}
       </AnimatePresence>
 
+      {/* Floating Button */}
       <motion.button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((s) => !s)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="group relative p-5 rounded-[2rem] bg-blue-600 text-white shadow-[0_20px_50px_rgba(37,99,235,0.4)] flex items-center gap-4 transition-all"
+        className="rounded-2xl px-4 py-3 border border-black/10 dark:border-white/10 bg-slate-900 text-white shadow-lg flex items-center gap-2"
       >
-        {isOpen ? <X size={24} /> : (
-            <>
-                <MessageSquare size={24} className="fill-white/20" />
-                <span className="font-black uppercase text-[10px] tracking-[0.2em] pr-2">System Intel</span>
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-[#080a0f] rounded-full" />
-            </>
+        {isOpen ? (
+          <>
+            <X size={18} />
+            <span className="text-xs font-semibold">Close</span>
+          </>
+        ) : (
+          <>
+            <MessageSquare size={18} />
+            <span className="text-xs font-semibold">Chat</span>
+          </>
         )}
       </motion.button>
     </div>

@@ -1,109 +1,161 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
-import { 
-  Menu, X, User, LogOut, ChevronDown, 
-  Settings, Activity, Radio 
-} from 'lucide-react';
-import Logo from '../assets/cricsphere-logo.png';
+import React, { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../context/AuthContext";
+import {
+  Menu,
+  X,
+  ChevronDown,
+  Settings,
+  Activity,
+  LogOut,
+  User,
+  Radio,
+} from "lucide-react";
+import Logo from "../assets/cricsphere-logo.png";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
   const { user, logout } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 14);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
   const navLinks = [
-    { name: 'Live Hub', path: '/live-scores', icon: Radio },
-    { name: 'Schedules', path: '/schedules' },
-    { name: 'Teams', path: '/teams' },
-    { name: 'Stats', path: '/stats' },
-    { name: 'News', path: '/news' },
+    { name: "Live Hub", path: "/live-scores", icon: Radio },
+    { name: "Schedules", path: "/schedules" },
+    { name: "Teams", path: "/teams" },
+    { name: "Stats", path: "/stats" },
+    { name: "News", path: "/news" },
   ];
 
   const isActive = (path) => location.pathname === path;
-  const displayName = user?.username || 'User';
-  const avatar = displayName.charAt(0).toUpperCase();
+
+  const displayName = user?.username || "User";
+  const avatar = displayName?.charAt(0)?.toUpperCase() || "U";
 
   return (
     <nav
-      className={`sticky top-0 z-[100] transition-all duration-500 ${
+      className={`sticky top-0 z-[100] transition-all duration-300 ${
         scrolled
-          ? 'bg-[#080a0f]/80 backdrop-blur-xl border-b border-white/5 py-3 shadow-2xl'
-          : 'bg-[#080a0f] border-b border-transparent py-5'
+          ? "bg-white/70 dark:bg-[#05070c]/70 backdrop-blur-xl border-b border-black/10 dark:border-white/10"
+          : "bg-white dark:bg-[#05070c] border-b border-transparent"
       }`}
     >
-      <div className="max-w-[1440px] mx-auto px-6">
-        <div className="flex justify-between items-center">
-
-          {/* 🟢 BRAND IDENTITY */}
-          <Link to="/home" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform duration-300">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="h-[72px] flex items-center justify-between">
+          {/* Brand */}
+          <Link to="/home" className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm flex items-center justify-center">
               <img src={Logo} alt="CricSphere" className="w-7 h-7" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-black text-white uppercase tracking-tighter leading-none italic">
-                Cric<span className="text-blue-500">Sphere</span>
-              </span>
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.4em] mt-1">Intelligence</span>
+
+            <div className="leading-tight">
+              <p className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+                Cric<span className="text-blue-600 dark:text-blue-400">Sphere</span>
+              </p>
+              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                Cricket Intelligence
+              </p>
             </div>
           </Link>
 
-          {/* 🔵 DESKTOP NAV */}
-          <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.path}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 ${
-                  isActive(link.path)
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                }`}
-              >
-                {link.icon && <link.icon size={12} className={isActive(link.path) ? "animate-pulse" : ""} />}
-                {link.name}
-              </Link>
-            ))}
+          {/* Desktop Nav */}
+          <div className="hidden lg:flex items-center gap-2">
+            {navLinks.map((link) => {
+              const active = isActive(link.path);
+              const Icon = link.icon;
 
-            <div className="h-6 w-px bg-white/10 mx-4" />
+              return (
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+                    active
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5"
+                  }`}
+                >
+                  {Icon && (
+                    <Icon
+                      size={14}
+                      className={active ? "opacity-100" : "opacity-70"}
+                    />
+                  )}
+                  {link.name}
+                </Link>
+              );
+            })}
 
-            {/* 🟠 AUTH / USER AREA */}
+            <div className="h-7 w-px bg-black/10 dark:bg-white/10 mx-2" />
+
+            {/* Auth Area */}
             {user ? (
               <div className="relative group">
-                <button className="flex items-center gap-3 pl-2 pr-4 py-2 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all">
-                  <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center text-xs font-black shadow-lg">
+                <button className="flex items-center gap-3 px-3 py-2 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-black/5 dark:hover:bg-white/10 transition-all shadow-sm">
+                  <div className="h-9 w-9 rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm border border-black/10 dark:border-white/10">
                     {avatar}
                   </div>
-                  <ChevronDown size={14} className="text-slate-500 group-hover:rotate-180 transition-transform duration-300" />
+
+                  <div className="hidden xl:flex flex-col text-left">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white leading-tight">
+                      {displayName}
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Account
+                    </span>
+                  </div>
+
+                  <ChevronDown
+                    size={16}
+                    className="text-slate-500 dark:text-slate-400 group-hover:rotate-180 transition-transform"
+                  />
                 </button>
 
-                {/* Dropdown Menu */}
-                <div className="absolute right-0 mt-4 w-56 bg-[#111827] border border-white/5 rounded-2xl shadow-2xl opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-300 origin-top-right z-[110] overflow-hidden">
-                  <div className="px-5 py-4 bg-white/[0.02] border-b border-white/5">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Profile</p>
-                    <p className="text-sm font-black text-white truncate mt-1 italic uppercase">{displayName}</p>
+                {/* Dropdown */}
+                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#05070c] shadow-xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto transition-all origin-top-right overflow-hidden">
+                  <div className="px-4 py-3 border-b border-black/10 dark:border-white/10">
+                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                      {displayName}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Signed in
+                    </p>
                   </div>
 
                   <div className="p-2">
-                    <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/5 hover:text-blue-500 rounded-xl transition-all">
-                      <Settings size={14} /> Account Settings
+                    <Link
+                      to="/profile"
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+                    >
+                      <Settings size={16} />
+                      Account Settings
                     </Link>
-                    <Link to="/stats" className="flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/5 hover:text-emerald-500 rounded-xl transition-all">
-                      <Activity size={14} /> Personal Stats
+
+                    <Link
+                      to="/stats"
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+                    >
+                      <Activity size={16} />
+                      Personal Stats
                     </Link>
+
                     <button
                       onClick={logout}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-500/10 transition-all"
                     >
-                      <LogOut size={14} /> Secure Logout
+                      <LogOut size={16} />
+                      Logout
                     </button>
                   </div>
                 </div>
@@ -111,66 +163,84 @@ const Header = () => {
             ) : (
               <Link
                 to="/login"
-                className="px-8 py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-xl"
+                className="px-6 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-semibold hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all shadow-sm"
               >
-                Enter Arena
+                Login
               </Link>
             )}
           </div>
 
-          {/* 🔴 MOBILE TOGGLE */}
+          {/* Mobile Toggle */}
           <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-3 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-colors"
+            onClick={() => setIsOpen((p) => !p)}
+            className="lg:hidden p-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 text-slate-700 dark:text-slate-200 shadow-sm"
           >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
+            {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
-      {/* 📱 MOBILE NAVIGATION */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="lg:hidden bg-[#080a0f] border-t border-white/5 overflow-hidden"
+            className="lg:hidden border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#05070c] overflow-hidden"
           >
-            <div className="px-6 py-8 space-y-4">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.path}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center justify-between p-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${
-                    isActive(link.path)
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-white/5 text-slate-500'
-                  }`}
-                >
-                  {link.name}
-                  <ChevronRight size={16} />
-                </Link>
-              ))}
+            <div className="max-w-7xl mx-auto px-6 py-6 space-y-2">
+              {navLinks.map((link) => {
+                const active = isActive(link.path);
+                const Icon = link.icon;
 
-              {user && (
-                <div className="pt-6 mt-6 border-t border-white/5 space-y-3">
+                return (
                   <Link
-                    to="/profile"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 text-slate-400 text-xs font-black uppercase tracking-widest"
+                    key={link.name}
+                    to={link.path}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+                      active
+                        ? "bg-blue-600 text-white"
+                        : "bg-black/5 dark:bg-white/5 text-slate-700 dark:text-slate-200"
+                    }`}
                   >
-                    <User size={18} /> My Profile
+                    <span className="flex items-center gap-3">
+                      {Icon && <Icon size={16} />}
+                      {link.name}
+                    </span>
                   </Link>
-                  <button
-                    onClick={() => { logout(); setIsOpen(false); }}
-                    className="w-full flex items-center gap-3 p-4 rounded-2xl bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest"
+                );
+              })}
+
+              {/* Mobile Auth */}
+              <div className="pt-4 mt-4 border-t border-black/10 dark:border-white/10">
+                {user ? (
+                  <div className="space-y-2">
+                    <Link
+                      to="/profile"
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 text-slate-700 dark:text-slate-200 text-sm font-semibold"
+                    >
+                      <User size={16} />
+                      My Profile
+                    </Link>
+
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-500/10 text-red-600 text-sm font-semibold"
+                    >
+                      <LogOut size={16} />
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="w-full flex items-center justify-center px-4 py-3 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-sm font-semibold hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all"
                   >
-                    <LogOut size={18} /> Logout
-                  </button>
-                </div>
-              )}
+                    Login
+                  </Link>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
