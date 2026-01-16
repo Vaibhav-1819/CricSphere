@@ -393,7 +393,7 @@ export default function Home() {
 
                 <Link to="/premium">
                   <button className="mt-4 w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-extrabold uppercase tracking-wide transition-all">
-                    Analyze Now
+                    Upgrade Now
                   </button>
                 </Link>
               </div>
