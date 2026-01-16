@@ -44,8 +44,18 @@ export default function LiveScore({ match }) {
 
   if (!info || !score) return null;
 
-  const t1 = info?.team1?.teamName || info?.team1?.name || "Team 1";
-  const t2 = info?.team2?.teamName || info?.team2?.name || "Team 2";
+  const t1 =
+    info?.team1?.teamName ||
+    info?.team1?.shortName ||
+    info?.team1?.name ||
+    "Team 1";
+
+  const t2 =
+    info?.team2?.teamName ||
+    info?.team2?.shortName ||
+    info?.team2?.name ||
+    "Team 2";
+
 
   // Most of the time Cricbuzz gives innings like this
   const s1 = score?.team1Score?.inngs1 || null;

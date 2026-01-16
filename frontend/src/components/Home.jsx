@@ -102,7 +102,7 @@ const LiveHub = ({ matches = [] }) => {
           </div>
           <div>
             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white">
-              Live Arena
+              Live Now
             </h2>
             <p className="text-[10px] text-slate-500 font-bold">
               Real-time match telemetry
@@ -511,7 +511,7 @@ export default function Home() {
                 to="/stats"
                 className="block mt-10 pt-4 border-t border-white/5 text-[9px] font-black uppercase text-center text-slate-500 hover:text-blue-500 transition-colors tracking-[0.2em] focus:outline-none focus:ring-2 focus:ring-blue-500/60"
               >
-                View World Standings
+                View Team Standings
               </Link>
             </div>
           </aside>

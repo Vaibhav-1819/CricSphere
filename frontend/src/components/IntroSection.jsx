@@ -261,7 +261,7 @@ export default function IntroSection() {
             <div className="flex items-center gap-3 mb-6">
               <img src={logo} className="w-10 h-10" alt="Logo" />
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                CricSphere • Version 2.0
+                CricSphere • Version 2.1
               </span>
             </div>
 
@@ -329,10 +329,10 @@ export default function IntroSection() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                  Live Match
+                  Live Now
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Auto-refresh every 30s
+                  Real-time Updates
                 </p>
               </div>
               <Activity className="text-slate-400" size={18} />

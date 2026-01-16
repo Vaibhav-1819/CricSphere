@@ -94,7 +94,7 @@ export default function Stats() {
               World <span className="text-blue-500">Rankings</span>
             </h1>
             <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-4 flex items-center gap-2">
-              <Activity size={14} className="text-blue-500" /> ICC Global Telemetry
+              <Activity size={14} className="text-blue-500" /> Latest Rankings 
             </p>
           </div>
 
@@ -184,14 +184,13 @@ export default function Stats() {
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-            ICC Database Synced
+            Updated Weekly
           </span>
           <span className="text-slate-800">|</span>
-          <span className="text-blue-500/50">RapidAPI Node Active</span>
+          <span className="text-blue-500/50">Active</span>
         </div>
         <div className="flex items-center gap-2">
-          <BarChart3 size={12} className="text-blue-500" /> CricSphere Analytics
-          Engine v1.0
+          <BarChart3 size={12} className="text-blue-500" /> CricSphere 2026
         </div>
       </footer>
     </div>
