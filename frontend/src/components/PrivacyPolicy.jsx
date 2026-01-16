@@ -1,157 +1,304 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Shield, Lock, Eye, FileText, 
-  Server, Database, Globe, CheckCircle2,
-  Fingerprint, Scale, AlertCircle, Terminal,
-  Zap, ShieldCheck, UserCheck, Trash2
-} from 'lucide-react';
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  ShieldCheck,
+  Eye,
+  Lock,
+  Trash2,
+  Database,
+  FileText,
+  UserCheck,
+  Server,
+  Globe,
+  AlertCircle,
+} from "lucide-react";
 
 const PrivacyPolicy = () => {
+  const lastUpdated = "Jan 2026";
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080a0f] font-sans relative overflow-hidden transition-colors duration-500">
-      
-      {/* --- AMBIENT TECH BACKGROUND --- */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-        <div className="absolute h-full w-full bg-[radial-gradient(#2dd4bf_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+    <div className="min-h-screen bg-white dark:bg-[#05070c] relative transition-colors">
+      {/* Subtle background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="h-full w-full bg-gradient-to-b from-slate-50 via-white to-white dark:from-[#05070c] dark:via-[#05070c] dark:to-[#05070c]" />
+        <div className="absolute inset-0 opacity-[0.20] dark:opacity-[0.10] bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.25),transparent_55%)]" />
       </div>
 
-      <div className="relative z-10 pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
-        
-        {/* --- HEADER BLOCK --- */}
-        <header className="text-center mb-16">
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
+      <div className="max-w-5xl mx-auto px-6 pt-24 pb-16">
+        {/* Header */}
+        <header className="text-center mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-8 backdrop-blur-xl"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-600/10 border border-blue-600/20 mb-6"
           >
-            <ShieldCheck size={16} className="text-emerald-500" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">
-              GDPR & CCPA Compliant Engine
+            <ShieldCheck size={16} className="text-blue-600 dark:text-blue-400" />
+            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+              CricSphere Privacy Policy
             </span>
           </motion.div>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
+
+          <motion.h1
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white mb-6 tracking-tighter"
+            className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white"
           >
-            Privacy <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">Shield</span>
+            Privacy Policy
           </motion.h1>
-          
-          <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto font-medium leading-relaxed">
-            At CricSphere, your data is treated like a prize wicket—protected at all costs. We only collect what we need to power your live experience.
+
+          <p className="mt-4 text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            CricSphere is built to deliver live cricket scores, schedules, and stats
+            with a clean dashboard experience. This policy explains what we collect,
+            why we collect it, and how you control your data.
+          </p>
+
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-500">
+            Last updated: <span className="font-medium">{lastUpdated}</span>
           </p>
         </header>
 
-        {/* --- PRIVACY HUD (Quick Digest for Fans) --- */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-            <HudCard icon={<Eye size={20}/>} title="Zero Tracking" desc="No 3rd party ad trackers or behavioral cookies." />
-            <HudCard icon={<Lock size={20}/>} title="End-to-End" desc="Telemetry data is encrypted via TLS 1.3." />
-            <HudCard icon={<Trash2 size={20}/>} title="Right to Erase" desc="Delete your entire data history in 1-click." />
+        {/* Quick summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+          <HudCard
+            icon={<Eye size={18} />}
+            title="No ad tracking"
+            desc="We don’t sell your data or run behavioral ads."
+          />
+          <HudCard
+            icon={<Lock size={18} />}
+            title="Secure by default"
+            desc="Data is protected using HTTPS and access controls."
+          />
+          <HudCard
+            icon={<Trash2 size={18} />}
+            title="You control deletion"
+            desc="You can request account & data removal anytime."
+          />
         </div>
 
-        {/* --- DATA TRANSPARENCY MATRIX --- */}
-        
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
+        {/* Data table */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden mb-12 shadow-2xl shadow-emerald-500/5"
+          viewport={{ once: true }}
+          className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden shadow-sm mb-10"
         >
-            <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-                    <Database className="text-emerald-500" /> Data Transparency Matrix
-                </h2>
-            </div>
-            <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 dark:bg-slate-950">
-                        <tr>
-                            <th className="px-8 py-4">Data Point</th>
-                            <th className="px-8 py-4">Usage Purpose</th>
-                            <th className="px-8 py-4">Retention</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        <MatrixRow label="Auth Credentials" usage="Secure session & JWT management" time="Until account deletion" />
-                        <MatrixRow label="Region / IP" usage="Live score node optimization" time="24 Hours (Volatile)" />
-                        <MatrixRow label="Favorite Teams" usage="Push Notification personalization" time="User-controlled" />
-                    </tbody>
-                </table>
-            </div>
+          <div className="p-6 border-b border-black/10 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <Database className="text-blue-600 dark:text-blue-400" size={18} />
+              Data we collect (summary)
+            </h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              We collect only what’s needed to run CricSphere smoothly.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-[#05070c]">
+                <tr>
+                  <th className="px-6 py-4">Data</th>
+                  <th className="px-6 py-4">Why we need it</th>
+                  <th className="px-6 py-4">Retention</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/5 dark:divide-white/10">
+                <MatrixRow
+                  label="Account details (email / auth ID)"
+                  usage="Login, session management, and user preferences"
+                  time="Until account deletion"
+                />
+                <MatrixRow
+                  label="App usage (basic telemetry)"
+                  usage="Improve performance, reduce errors, optimize caching"
+                  time="Short-term (rolling window)"
+                />
+                <MatrixRow
+                  label="Device / IP (limited)"
+                  usage="Security, abuse prevention, regional API routing"
+                  time="Up to 24 hours"
+                />
+                <MatrixRow
+                  label="Favorites (teams / matches)"
+                  usage="Personalized dashboard & quick access"
+                  time="User-controlled"
+                />
+              </tbody>
+            </table>
+          </div>
         </motion.div>
 
-        {/* --- DETAILED PROTOCOLS --- */}
-        <div className="space-y-6">
-            <ProtocolCard 
-                number="01" 
-                title="Encryption Architecture" 
-                icon={<Terminal />}
-                content="Our Spring Boot backend utilizes AES-256-GCM encryption for all database records. Authentication is handled via RS256 Signed JWTs, ensuring your identity cannot be forged or intercepted during match updates."
-            />
-            <ProtocolCard 
-                number="02" 
-                title="User Sovereignty" 
-                icon={<UserCheck />}
-                content="CricSphere operates on the principle of 'Data Portability'. You can export your interaction history, favorite team preferences, and account logs at any time via your profile settings."
-            />
+        {/* Sections */}
+        <div className="space-y-5">
+          <PolicyCard
+            icon={<FileText />}
+            title="1. What CricSphere does"
+            content={
+              <>
+                CricSphere provides a cricket dashboard experience including live
+                scores, match schedules, series data, and player/team statistics.
+                We use trusted sports data providers/APIs to fetch match data and
+                show it inside the app.
+              </>
+            }
+          />
+
+          <PolicyCard
+            icon={<Server />}
+            title="2. Live data sources & caching"
+            content={
+              <>
+                Live match data is fetched from third-party cricket data APIs.
+                To reduce API usage and improve speed, CricSphere uses caching
+                (temporary storage) so repeated requests don’t hit the provider
+                unnecessarily. Cached data expires automatically after a short
+                time (TTL).
+              </>
+            }
+          />
+
+          <PolicyCard
+            icon={<UserCheck />}
+            title="3. Your account & preferences"
+            content={
+              <>
+                If you create an account, we store basic details like your
+                authentication ID and preferences (example: favorite teams). We
+                do not collect sensitive personal information such as passwords
+                in plain text.
+              </>
+            }
+          />
+
+          <PolicyCard
+            icon={<Lock />}
+            title="4. Security"
+            content={
+              <>
+                CricSphere uses standard security practices such as HTTPS, access
+                rules, and server-side validation to protect your data. While no
+                system can guarantee 100% security, we actively work to prevent
+                unauthorized access and misuse.
+              </>
+            }
+          />
+
+          <PolicyCard
+            icon={<Globe />}
+            title="5. Cookies & analytics"
+            content={
+              <>
+                CricSphere may use essential cookies/local storage for session
+                state and app functionality. We do not use third-party ad trackers.
+                If analytics are enabled, they are used only to improve product
+                performance and reliability.
+              </>
+            }
+          />
+
+          <PolicyCard
+            icon={<Trash2 />}
+            title="6. Data deletion & export"
+            content={
+              <>
+                You can request deletion of your CricSphere account and associated
+                data. You may also request an export of your stored preferences
+                (example: favorites) where applicable.
+              </>
+            }
+          />
+
+          <PolicyCard
+            icon={<AlertCircle />}
+            title="7. Contact"
+            content={
+              <>
+                If you have questions about this Privacy Policy, you can contact us at{" "}
+                <a
+                  href="mailto:support@cricsphere.com"
+                  className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                >
+                  support@cricsphere.com
+                </a>
+                .
+              </>
+            }
+          />
         </div>
 
-        {/* --- FOOTER CTA --- */}
-        <footer className="mt-20 pt-12 border-t border-slate-200 dark:border-slate-800 flex flex-col items-center">
-            <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 mb-8 max-w-sm text-center">
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Have questions about our telemetry data? <br/> Reach our Data Protection Officer at:
-                </p>
-                <a href="mailto:dpo@cricsphere.com" className="text-emerald-500 font-black text-sm hover:underline mt-2 inline-block">dpo@cricsphere.com</a>
-            </div>
-            <p className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.4em]">Secure Environment // Dec 2025</p>
-        </footer>
-
+        {/* Footer note */}
+        <div className="mt-12 pt-8 border-t border-black/10 dark:border-white/10 text-center">
+          <p className="text-xs text-slate-500 dark:text-slate-500">
+            CricSphere is a student-built product demo. Policy text may be updated
+            as features evolve.
+          </p>
+        </div>
       </div>
     </div>
   );
 };
 
-// --- SUB-COMPONENTS ---
+/* ---------- Components ---------- */
 
-const HudCard = ({ icon, title, desc }) => (
-    <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col items-center text-center group hover:border-emerald-500/30 transition-all shadow-sm">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-4 group-hover:scale-110 transition-transform">
-            {icon}
-        </div>
-        <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white mb-1">{title}</h3>
-        <p className="text-[10px] font-medium text-slate-400 leading-relaxed uppercase">{desc}</p>
+const HudCard = ({ icon, title, desc }) => {
+  return (
+    <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 p-5 shadow-sm">
+      <div className="w-10 h-10 rounded-xl border border-black/10 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-700 dark:text-slate-200">
+        {icon}
+      </div>
+
+      <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">
+        {title}
+      </h3>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+        {desc}
+      </p>
     </div>
-);
+  );
+};
 
-const MatrixRow = ({ label, usage, time }) => (
-    <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-        <td className="px-8 py-5 text-sm font-bold text-slate-900 dark:text-slate-200">{label}</td>
-        <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400">{usage}</td>
-        <td className="px-8 py-5">
-            <span className="text-[10px] font-black uppercase px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-md text-slate-400">
-                {time}
-            </span>
-        </td>
+const MatrixRow = ({ label, usage, time }) => {
+  return (
+    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition">
+      <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">
+        {label}
+      </td>
+      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+        {usage}
+      </td>
+      <td className="px-6 py-4">
+        <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">
+          {time}
+        </span>
+      </td>
     </tr>
-);
+  );
+};
 
-const ProtocolCard = ({ number, title, icon, content }) => (
-    <div className="flex gap-6 p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 group transition-all">
-        <div className="hidden md:flex flex-col items-center shrink-0">
-            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
-                {React.cloneElement(icon, { size: 20 })}
-            </div>
-            <div className="mt-4 text-[10px] font-black text-slate-300 dark:text-slate-700 tracking-tighter">{number}</div>
+const PolicyCard = ({ icon, title, content }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl border border-black/10 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-700 dark:text-slate-200">
+          {React.cloneElement(icon, { size: 18 })}
         </div>
-        <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight mb-3">{title}</h3>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-                {content}
-            </p>
+
+        <div className="flex-1">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+            {title}
+          </h3>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            {content}
+          </p>
         </div>
-    </div>
-);
+      </div>
+    </motion.div>
+  );
+};
 
 export default PrivacyPolicy;

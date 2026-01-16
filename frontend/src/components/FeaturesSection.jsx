@@ -1,138 +1,158 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
 
 const FeaturesSection = () => {
-  // Animation Variants for the Stagger Effect
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.15, // Delay between each card's entry
-      }
-    }
+      transition: { staggerChildren: 0.12 },
+    },
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { 
-      opacity: 1, 
+    hidden: { opacity: 0, y: 16 },
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
-    }
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
   };
 
   const features = [
-    { 
-      title: "Live Scores", 
+    {
+      title: "Live Scores",
+      description:
+        "Fast, reliable match updates across international and domestic games.",
       icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.7"
+            d="M13 10V3L4 14h7v7l9-11h-7z"
+          />
         </svg>
       ),
-      iconBg: "bg-blue-500/10",
-      iconColor: "text-blue-400",
-      lineColor: "bg-blue-500",
-      description: "Lightning-fast real-time updates on all international and domestic matches." 
     },
-    { 
-      title: "Match Schedules", 
+    {
+      title: "Match Schedules",
+      description:
+        "Stay ahead with upcoming fixtures, series, and tournament calendars.",
       icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.7"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
         </svg>
       ),
-      iconBg: "bg-indigo-500/10",
-      iconColor: "text-indigo-400",
-      lineColor: "bg-indigo-500",
-      description: "Never miss a game with our complete calendar of upcoming series and tournaments." 
     },
-    { 
-      title: "Detailed Stats", 
+    {
+      title: "Detailed Stats",
+      description:
+        "Player insights, team comparisons, and performance analytics in one place.",
       icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.7"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          />
         </svg>
       ),
-      iconBg: "bg-emerald-500/10",
-      iconColor: "text-emerald-400",
-      lineColor: "bg-emerald-500",
-      description: "Dive deep into detailed statistics, player profiles, and historical data analysis." 
     },
-    { 
-      title: "Breaking News", 
+    {
+      title: "Breaking News",
+      description:
+        "Latest headlines, match analysis, and key cricket updates — instantly.",
       icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.7"
+            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+          />
         </svg>
       ),
-      iconBg: "bg-rose-500/10",
-      iconColor: "text-rose-400",
-      lineColor: "bg-rose-500",
-      description: "Get breaking headlines, exclusive interviews, and expert match analysis." 
     },
   ];
 
   return (
-    <section id="features" className="relative py-32 bg-[#0b1220] overflow-hidden">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-600/5 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-indigo-600/5 rounded-full blur-[120px]"></div>
+    <section
+      id="features"
+      className="relative py-24 bg-white dark:bg-[#05070c]"
+    >
+      {/* Subtle background glow */}
+      <div className="absolute inset-0 -z-10">
+        <div className="h-full w-full bg-gradient-to-b from-slate-50 via-white to-white dark:from-[#05070c] dark:via-[#05070c] dark:to-[#05070c]" />
+        <div className="absolute inset-0 opacity-[0.25] dark:opacity-[0.12] bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.35),transparent_55%)]" />
       </div>
 
-      <div className="container mx-auto px-6 relative z-10">
-        <div className="text-center mb-20">
-          <motion.span 
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            className="inline-block px-4 py-1.5 mb-6 text-[10px] font-black tracking-[0.3em] text-blue-400 uppercase bg-blue-400/10 rounded-full border border-blue-400/20"
-          >
-            The Arena Advantage
-          </motion.span>
-          
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Header */}
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-4xl md:text-6xl font-black text-white tracking-tighter"
+            viewport={{ once: true }}
+            className="text-sm font-semibold text-blue-600 dark:text-blue-400"
           >
-            Everything you need <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
-              to own the game
-            </span>
+            Features
+          </motion.p>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="mt-3 text-3xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white"
+          >
+            Everything you need for a better cricket experience
           </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05, duration: 0.6 }}
+            viewport={{ once: true }}
+            className="mt-4 text-base text-slate-600 dark:text-slate-400"
+          >
+            Clean UI, fast updates, and match intelligence — designed like a modern
+            product, not a flashy app.
+          </motion.p>
         </div>
 
-        {/* Staggered Container */}
-        <motion.div 
+        {/* Cards */}
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+          viewport={{ once: true, margin: "-80px" }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
           {features.map((feature) => (
             <motion.div
               key={feature.title}
               variants={cardVariants}
-              whileHover={{ y: -10 }}
-              className="group relative p-10 bg-white/5 border border-white/5 rounded-[2.5rem] hover:bg-white/[0.07] transition-all duration-500"
+              whileHover={{ y: -4 }}
+              className="rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm hover:shadow-md transition-all"
             >
-              {/* Icon Container */}
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${feature.iconBg} ${feature.iconColor} group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(0,0,0,0.3)] transition-all duration-500`}>
+              <div className="w-10 h-10 rounded-xl border border-black/10 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-700 dark:text-slate-200">
                 {feature.icon}
               </div>
 
-              <h3 className="text-xl font-black text-white mb-4 uppercase tracking-tight">
+              <h3 className="mt-5 text-lg font-semibold text-slate-900 dark:text-white">
                 {feature.title}
               </h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">
+
+              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                 {feature.description}
               </p>
-
-              {/* Identity Line (Animated on Hover) */}
-              <div className={`absolute bottom-6 left-10 w-8 h-1 rounded-full ${feature.lineColor} opacity-20 group-hover:w-20 group-hover:opacity-100 transition-all duration-500`}></div>
             </motion.div>
           ))}
         </motion.div>
