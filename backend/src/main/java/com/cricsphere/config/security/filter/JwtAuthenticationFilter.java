@@ -29,57 +29,73 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
 
         try {
-            String token = extractToken(request);
+            // 1️⃣ Skip preflight requests (CORS)
+            if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
-            if (StringUtils.hasText(token) && jwtUtils.validateToken(token)) {
-                String username = jwtUtils.getUsernameFromToken(token);
+            // 2️⃣ Extract JWT from Authorization header
+            String token = resolveToken(request);
 
-                // Only authenticate if the SecurityContext is currently empty
+            // 3️⃣ Validate token
+            if (token != null && jwtUtils.validateToken(token)) {
+
+                // Only set auth if not already authenticated
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                    
-                    // This calls CustomUserDetailsService which now returns our User entity
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                    // We use userDetails.getAuthorities() which now contains the 
-                    // centralized "ROLE_" logic from the User entity itself
-                    UsernamePasswordAuthenticationToken authToken =
+                    String username = jwtUtils.getUsernameFromToken(token);
+
+                    UserDetails userDetails =
+                            userDetailsService.loadUserByUsername(username);
+
+                    UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
                                     userDetails.getAuthorities()
                             );
 
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    
-                    // Establish the security context for the duration of this request
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    
-                    log.debug("Authenticated user: {}, setting security context", username);
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+
+                    SecurityContextHolder
+                            .getContext()
+                            .setAuthentication(authentication);
+
+                    log.debug("JWT authenticated user: {}", username);
                 }
             }
 
-        } catch (Exception e) {
-            log.error("Could not set user authentication in security context: {}", e.getMessage());
+        } catch (Exception ex) {
+            // Clear context on any JWT failure
             SecurityContextHolder.clearContext();
+            log.warn("JWT authentication failed: {}", ex.getMessage());
         }
 
+        // Continue filter chain
         filterChain.doFilter(request, response);
     }
 
     /**
-     * Extracts the Bearer token from the Authorization header.
+     * Resolves JWT token from Authorization header.
+     * Expected format: "Bearer <token>"
      */
-    private String extractToken(HttpServletRequest request) {
-        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
-            return header.substring(7);
+    private String resolveToken(HttpServletRequest request) {
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
         }
+
         return null;
     }
 }

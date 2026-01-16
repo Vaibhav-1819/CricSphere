@@ -2,27 +2,34 @@ import React, { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Bookmark, Clock, ChevronRight,
-  LayoutGrid, List, Newspaper, ExternalLink, Flame, Info, Loader2
+  LayoutGrid, List, Newspaper, Flame, Info, Loader2
 } from "lucide-react";
-import api from "../services/api"; // Updated to use your perfected api.js
+import api from "../services/api";
 
 /* ---------------- 🧠 NORMALIZATION ENGINE ---------------- */
+/**
+ * ✅ Fix 1 & 3: Cricbuzz official image pattern (NO .jpg) and safe imageId check
+ */
 const normalize = (n) => {
   const s = n.story || n;
-  
-  // Cricbuzz uses imageId; we construct the high-res URL manually
-  const imageUrl = s.imageId 
-    ? `https://www.cricbuzz.com/a/img/v1/600x400/i1/${s.imageId}.jpg` 
+
+  // Safe check for imageId
+  const imageId = s.imageId || null;
+
+  // Construct URL without .jpg as per best practices for Cricbuzz v1 API
+  const imageUrl = imageId
+    ? `https://www.cricbuzz.com/a/img/v1/600x400/i1/${imageId}`
     : "https://via.placeholder.com/600x400?text=Cricsphere+News";
 
   return {
     id: s.id || s.storyId,
     title: s.hline || s.title,
-    description: s.intro || s.description || "Intelligence briefing available in full report.",
-    imageUrl: imageUrl,
+    description:
+      s.intro || s.description || "Intelligence briefing available in full report.",
+    imageUrl,
     source: s.source || "International Feed",
     publishedAt: s.pubTime || Date.now(),
-    url: s.id ? `https://www.cricbuzz.com/cricket-news/${s.id}` : "#"
+    url: s.id ? `https://www.cricbuzz.com/cricket-news/${s.id}` : "#",
   };
 };
 
@@ -55,10 +62,9 @@ export default function News() {
   }, [bookmarks]);
 
   const processedNews = useMemo(() => {
-    // 🟢 CRITICAL SYNC: Backend returns 'storyList'
     const list = data?.storyList || [];
     return list
-      .filter(item => item.story) // Cricbuzz nests items inside a 'story' object
+      .filter(item => item.story) 
       .map(normalize)
       .filter(item => {
         const isSaved = bookmarks.includes(item.id);
@@ -179,7 +185,15 @@ const NewsItem = ({ data, viewMode, isBookmarked, onBookmark }) => {
       className={`bg-white rounded-[2rem] border border-slate-200 overflow-hidden hover:border-blue-500 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-100 group ${isList ? "flex h-56" : "block"}`}
     >
       <div className={`overflow-hidden relative ${isList ? "w-64 h-full" : "w-full h-48"}`}>
-        <img src={data.imageUrl} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="" />
+        {/* ✅ Fix 2: Add fallback when image fails using onError */}
+        <img 
+          src={data.imageUrl} 
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+          alt="" 
+          onError={(e) => {
+            e.currentTarget.src = "https://via.placeholder.com/600x400?text=Cricsphere+News";
+          }}
+        />
       </div>
 
       <div className="p-6 flex flex-col flex-1">

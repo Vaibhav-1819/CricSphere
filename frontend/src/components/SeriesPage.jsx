@@ -5,7 +5,9 @@ import {
   Clock, Activity, Hash, Trophy
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSeriesDetail } from "../services/api";
+// ✅ Fix 1: Modularized Import
+import { seriesApi } from "../services/api";
+
 export default function SeriesPage() {
   const { seriesId } = useParams();
   const navigate = useNavigate();
@@ -15,11 +17,13 @@ export default function SeriesPage() {
   const [error, setError] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
 
+  // ✅ Fix 2: Updated loadDetail with modular API and safe mapping
   const loadDetail = async () => {
+    setLoading(true);
     try {
-      const res = await getSeriesDetail(seriesId);
+      const res = await seriesApi.getDetails(seriesId);
       // Maps to SeriesDetailResponse.data (SeriesDetail)
-      setData(res.data.data);
+      setData(res.data?.data || null);
       setError(false);
     } catch (e) {
       console.error("Critical: Failed to load series timeline", e);
@@ -29,13 +33,12 @@ export default function SeriesPage() {
     }
   };
 
+  // ✅ Fix 3: Removed interval to preserve API quota
   useEffect(() => {
     loadDetail();
-    // 5-minute sync to preserve 100/day API quota
-    const syncInterval = setInterval(loadDetail, 5 * 60 * 1000); 
-    return () => clearInterval(syncInterval);
   }, [seriesId]);
 
+  // ✅ Fix 4: Robust processedMatches filter (checks format/type/name)
   const processedMatches = useMemo(() => {
     if (!data?.matchList) return [];
 
@@ -44,9 +47,11 @@ export default function SeriesPage() {
     );
 
     if (activeFilter !== "All") {
-      list = list.filter(m =>
-        m.name.toLowerCase().includes(activeFilter.toLowerCase())
-      );
+      list = list.filter((m) => {
+        // Robust check for format across multiple possible API fields
+        const format = (m.matchType || m.matchFormat || m.format || "").toLowerCase();
+        return format.includes(activeFilter.toLowerCase());
+      });
     }
 
     return list;
@@ -77,7 +82,7 @@ export default function SeriesPage() {
                   <Trophy size={20} />
                 </span>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ongoing Tournament</span>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tournament Intel</span>
                   <span className="text-xs font-bold text-blue-400">{data.startDate} — {data.endDate}</span>
                 </div>
               </div>
@@ -221,7 +226,7 @@ const ErrorState = ({ onBack }) => (
     <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Timeline Offline</h3>
     <p className="text-slate-500 text-sm mt-2">The requested series data is currently unreachable.</p>
     <button onClick={onBack} className="mt-8 px-10 py-3 bg-blue-600 text-white font-black uppercase text-xs rounded-2xl">
-      Return to Home
+      Return to Schedules
     </button>
   </div>
 );

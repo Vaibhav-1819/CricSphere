@@ -1,40 +1,60 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import useFetch from "../hooks/useFetch";
 import MatchHeader from "../components/match/MatchHeader";
 import LiveScore from "../components/match/LiveScore";
-import { Loader2, MessageSquare, ListChecks, Users2, Activity } from "lucide-react";
+import {
+  Loader2,
+  MessageSquare,
+  ListChecks,
+  Users2,
+  Activity,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function MatchPage() {
   const { matchId } = useParams();
   const [activeTab, setActiveTab] = useState("commentary");
 
-  // Note: For Live Matches, we ideally pass a 'noCache' flag to useFetch 
-  // or use a shorter CACHE_DURATION to ensure the score updates.
-  const { data, loading, error } = useFetch(
-    `${import.meta.env.VITE_API_URL}/api/v1/cricket/match/${matchId}`
-  );
+  // ✅ FIX: Use relative URL (api instance already has baseURL)
+  const { data, loading, error } = useFetch(`/api/v1/cricket/match/${matchId}`);
 
   if (loading) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-[#080a0f] gap-4">
         <Loader2 className="animate-spin text-blue-500" size={40} />
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Syncing Stadium Feed</span>
+        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+          Syncing Stadium Feed
+        </span>
       </div>
     );
   }
 
-  if (error || !data?.data) {
+  if (error || !data) {
     return (
       <div className="h-screen flex flex-col items-center justify-center text-slate-400 gap-4">
         <Activity size={48} className="opacity-20" />
-        <p className="font-bold uppercase tracking-widest text-xs">Telemetry Connection Lost</p>
+        <p className="font-bold uppercase tracking-widest text-xs">
+          Telemetry Connection Lost
+        </p>
       </div>
     );
   }
 
-  const match = data.data;
+  // Backend returns JSON string OR object sometimes
+  // If your backend sends String, then axios gives string -> parse it safely
+  const parsed = typeof data === "string" ? safeJsonParse(data) : data;
+
+  // In your backend controller you return ResponseEntity<String>
+  // so frontend will get raw JSON string unless backend sets proper JSON content-type
+  // We'll support both shapes:
+  const match = parsed?.matchDetails || parsed?.matchInfo || parsed;
+
+  const info = match?.matchInfo || match;
+  const score = match?.matchScore || {};
+
+  const team1Name = info?.team1?.teamName || "Team 1";
+  const team2Name = info?.team2?.teamName || "Team 2";
 
   const tabs = [
     { id: "commentary", label: "Commentary", icon: MessageSquare },
@@ -45,7 +65,6 @@ export default function MatchPage() {
   return (
     <div className="bg-slate-50 dark:bg-[#080a0f] min-h-screen pb-20">
       <div className="max-w-5xl mx-auto px-4 pt-8">
-
         {/* 🟢 HERO SECTION */}
         <MatchHeader match={match} />
         <LiveScore match={match} />
@@ -79,42 +98,61 @@ export default function MatchPage() {
           >
             {activeTab === "commentary" && (
               <div className="space-y-4">
-                 {/* This would eventually be a Commentary Component */}
-                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center">
-                    <p className="text-slate-500 italic text-sm">Ball-by-ball commentary for {match.team1.name} vs {match.team2.name} will stream here...</p>
-                 </div>
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center">
+                  <p className="text-slate-500 italic text-sm">
+                    Ball-by-ball commentary for {team1Name} vs {team2Name} will
+                    stream here...
+                  </p>
+                </div>
               </div>
             )}
 
             {activeTab === "scorecard" && (
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8">
-                 <h4 className="text-sm font-black uppercase tracking-tighter mb-4">Detailed Scorecard</h4>
-                 {/* Scorecard Table component goes here */}
+                <h4 className="text-sm font-black uppercase tracking-tighter mb-4">
+                  Detailed Scorecard
+                </h4>
+
+                <pre className="text-[10px] text-slate-500 overflow-auto">
+                  {JSON.stringify(score, null, 2)}
+                </pre>
               </div>
             )}
 
             {activeTab === "squads" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SquadList teamName={match.team1.name} />
-                <SquadList teamName={match.team2.name} />
+                <SquadList teamName={team1Name} />
+                <SquadList teamName={team2Name} />
               </div>
             )}
           </motion.div>
         </AnimatePresence>
-
       </div>
     </div>
   );
 }
 
-// Internal Mini-Component for Squads
 const SquadList = ({ teamName }) => (
   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
-    <h3 className="text-[10px] font-black uppercase text-blue-500 mb-4 tracking-widest">{teamName} XI</h3>
+    <h3 className="text-[10px] font-black uppercase text-blue-500 mb-4 tracking-widest">
+      {teamName} XI
+    </h3>
     <div className="space-y-3">
       {[...Array(11)].map((_, i) => (
-        <div key={i} className="h-8 bg-slate-50 dark:bg-slate-800/50 rounded-lg animate-pulse" />
+        <div
+          key={i}
+          className="h-8 bg-slate-50 dark:bg-slate-800/50 rounded-lg animate-pulse"
+        />
       ))}
     </div>
   </div>
 );
+
+// ✅ Safe JSON parse helper
+function safeJsonParse(value) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}

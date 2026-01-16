@@ -40,69 +40,100 @@ public class SecurityConfig {
         this.authEntryPoint = authEntryPoint;
     }
 
+    /* =========================================================
+        PASSWORD ENCODER
+    ========================================================= */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /* =========================================================
+        AUTH PROVIDER
+    ========================================================= */
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        // Use constructor that accepts UserDetailsService to avoid the deprecated setter
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
 
+    /* =========================================================
+        AUTH MANAGER
+    ========================================================= */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    /* =========================================================
+        SECURITY FILTER CHAIN
+    ========================================================= */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults())
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(authEntryPoint))
-            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
+                // REST API -> CSRF disabled
+                .csrf(csrf -> csrf.disable())
 
-                    // 🔓 Auth Endpoints: Public for Login/Register
-                    .requestMatchers("/api/v1/auth/**").permitAll()
+                // Enable CORS with our configuration bean
+                .cors(Customizer.withDefaults())
 
-                    // 🔓 Public Data: Includes /live, /rankings/international, etc.
-                    // This covers the new dynamic rankings endpoint we added
-                    .requestMatchers(HttpMethod.GET, "/api/v1/cricket/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/stats/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/news/**").permitAll()
+                // Custom Unauthorized handler
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(authEntryPoint))
 
-                    // 🔓 Technical/System routes
-                    .requestMatchers("/", "/error", "/favicon.ico").permitAll()
-                    .requestMatchers("/actuator/health").permitAll()
+                // Stateless JWT auth
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                    // 🔒 Secured: Profile updates, favorite team selection, etc.
-                    .anyRequest().authenticated()
-            )
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                // Authorization rules
+                .authorizeHttpRequests(auth -> auth
+
+                        // ✅ Allow all preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // 🔓 Auth routes
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+
+                        // 🔓 Public cricket routes (your RapidAPI proxy endpoints)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/cricket/**").permitAll()
+
+                        // 🔓 Basic system routes
+                        .requestMatchers("/", "/error", "/favicon.ico").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+
+                        // 🔒 Everything else requires JWT
+                        .anyRequest().authenticated()
+                )
+
+                // Auth provider
+                .authenticationProvider(authenticationProvider())
+
+                // JWT filter
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    /* =========================================================
+        CORS CONFIGURATION
+        - JWT is sent in Authorization header (not cookies)
+        - So allowCredentials(false) is best & stable
+    ========================================================= */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allows local dev and any Vercel deployment preview
+        // Allowed origins (Local + Vercel)
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
                 "https://*.vercel.app"
         ));
 
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        
+        config.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+        ));
+
         config.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
@@ -110,8 +141,13 @@ public class SecurityConfig {
                 "X-Requested-With"
         ));
 
+        // Only needed if frontend must read response headers
         config.setExposedHeaders(List.of("Authorization"));
-        config.setAllowCredentials(true); // Required for sending JWT via headers/cookies if needed
+
+        // Using JWT via headers -> no cookies -> keep false
+        config.setAllowCredentials(false);
+
+        // Cache preflight response for 1 hour
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

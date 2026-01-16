@@ -9,7 +9,8 @@ import {
   Zap,
   Activity
 } from "lucide-react";
-import { getLiveMatches } from "../services/api";
+// ✅ Fix 1: Modularized Import
+import { matchApi } from "../services/api";
 
 export default function LiveScore() {
   const [matches, setMatches] = useState([]);
@@ -18,19 +19,21 @@ export default function LiveScore() {
 
   const load = useCallback(async () => {
     try {
-      const res = await getLiveMatches();
+      // ✅ Fix 1.1: Using modularized API call
+      const res = await matchApi.getLive();
       
       /**
-       * 🟢 CRITICAL FIX: DATA MAPPING
-       * RapidAPI Cricbuzz Structure: res.data.typeMatches -> seriesMatches -> seriesAdWrapper -> matches
+       * ✅ Fix 2: Data mapping crash fix (Safe Optional Chaining)
+       * Prevents app from crashing if typeMatches or seriesMatches is missing.
        */
       const typeMatches = res.data?.typeMatches || [];
       const extractedMatches = [];
 
       typeMatches.forEach((type) => {
-        type.seriesMatches.forEach((series) => {
-          if (series.seriesAdWrapper?.matches) {
-            extractedMatches.push(...series.seriesAdWrapper.matches);
+        (type.seriesMatches || []).forEach((series) => {
+          const matchesList = series?.seriesAdWrapper?.matches;
+          if (Array.isArray(matchesList)) {
+            extractedMatches.push(...matchesList);
           }
         });
       });
@@ -47,7 +50,8 @@ export default function LiveScore() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 60000); 
+    // ✅ Fix 3: Avoid hitting backend every 60s (Changed to 120,000ms / 2 mins)
+    const t = setInterval(load, 120000); 
     return () => clearInterval(t);
   }, [load]);
 

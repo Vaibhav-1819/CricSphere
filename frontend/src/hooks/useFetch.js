@@ -1,51 +1,118 @@
-import { useState, useEffect } from 'react';
-import { api } from '../context/AuthContext'; // Using the axios instance we created
+import { useEffect, useState, useRef } from "react";
+import { api } from "../context/AuthContext";
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 Minutes
+/**
+ * Default cache duration = 5 minutes
+ * Can be overridden per call using options.ttl
+ */
+const DEFAULT_TTL = 5 * 60 * 1000;
 
-const useFetch = (url) => {
+const makeCacheKey = (url) => `cache:${encodeURIComponent(url)}`;
+const makeTsKey = (url) => `cache_ts:${encodeURIComponent(url)}`;
+
+const useFetch = (url, options = {}) => {
+  const {
+    ttl = DEFAULT_TTL,
+    noCache = false,
+    refreshInterval = 0, // ms (0 = no auto refresh)
+    enabled = true,
+  } = options;
+
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!url);
   const [error, setError] = useState(null);
 
+  const isMountedRef = useRef(true);
+
   useEffect(() => {
-    let isMounted = true; // Prevents memory leaks if component unmounts
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-    const fetchData = async () => {
-      const cachedData = localStorage.getItem(url);
-      const cachedTimestamp = localStorage.getItem(`${url}_timestamp`);
+  useEffect(() => {
+    if (!enabled || !url) {
+      setLoading(false);
+      return;
+    }
 
-      // 1. Logic check: Use cache if it's fresh
-      if (cachedData && cachedTimestamp && (Date.now() - cachedTimestamp) < CACHE_DURATION) {
-        setData(JSON.parse(cachedData));
-        setLoading(false);
-        return;
-      }
+    const cacheKey = makeCacheKey(url);
+    const tsKey = makeTsKey(url);
 
-      setLoading(true);
+    const readCache = () => {
       try {
-        // 2. Use our 'api' axios instance (handles JWT headers automatically)
-        const response = await api.get(url);
-        
-        if (isMounted) {
-          // 3. Cache the successful response
-          localStorage.setItem(url, JSON.stringify(response.data));
-          localStorage.setItem(`${url}_timestamp`, Date.now());
-          
-          setData(response.data);
-          setError(null);
-        }
-      } catch (err) {
-        if (isMounted) setError(err);
-      } finally {
-        if (isMounted) setLoading(false);
+        const cachedData = localStorage.getItem(cacheKey);
+        const cachedTs = localStorage.getItem(tsKey);
+
+        if (!cachedData || !cachedTs) return null;
+
+        const age = Date.now() - Number(cachedTs);
+        if (age > ttl) return null;
+
+        return JSON.parse(cachedData);
+      } catch {
+        return null;
       }
     };
 
-    if (url) fetchData();
+    const writeCache = (payload) => {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(payload));
+        localStorage.setItem(tsKey, String(Date.now()));
+      } catch {
+        // ignore storage quota errors
+      }
+    };
 
-    return () => { isMounted = false; };
-  }, [url]);
+    const fetchNow = async ({ bypassCache = false } = {}) => {
+      if (!isMountedRef.current) return;
+
+      // 1) Serve cache first (fast UI)
+      if (!noCache && !bypassCache) {
+        const cached = readCache();
+        if (cached) {
+          setData(cached);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 2) Network request
+      setLoading(true);
+      try {
+        const res = await api.get(url);
+
+        if (!isMountedRef.current) return;
+
+        setData(res.data);
+        setError(null);
+
+        if (!noCache) writeCache(res.data);
+      } catch (err) {
+        if (!isMountedRef.current) return;
+        setError(err);
+      } finally {
+        if (!isMountedRef.current) return;
+        setLoading(false);
+      }
+    };
+
+    // initial fetch
+    fetchNow();
+
+    // auto refresh
+    let intervalId = null;
+    if (refreshInterval && refreshInterval > 0) {
+      intervalId = setInterval(() => {
+        fetchNow({ bypassCache: true });
+      }, refreshInterval);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [url, ttl, noCache, refreshInterval, enabled]);
 
   return { data, loading, error };
 };

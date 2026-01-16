@@ -5,7 +5,9 @@ import {
   Search, Calendar, ChevronRight, Info, Filter,
   ArrowUpDown, Hash, Layers
 } from "lucide-react";
-import { getSeries } from "../services/api";
+// ✅ Fix 1: Modularized Import
+import { seriesApi } from "../services/api";
+
 export default function Schedules() {
   const [series, setSeries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,11 +17,13 @@ export default function Schedules() {
   const [formatFilter, setFormatFilter] = useState("All");
   const [sortOrder, setSortOrder] = useState("asc");
 
+  // ✅ Fix 2: Updated loadData with safe optional chaining
   const loadData = async () => {
+    setLoading(true);
     try {
-      const res = await getSeries();
-      // res.data.data matches the SeriesListResponse structure
-      setSeries(res.data.data || []);
+      const res = await seriesApi.getList();
+      // Safely access the nested data array
+      setSeries(res.data?.data || []);
       setError(false);
     } catch (e) {
       console.error("Failed to fetch tournament schedules", e);
@@ -29,15 +33,15 @@ export default function Schedules() {
     }
   };
 
+  // ✅ Fix 3: Removed interval to be quota-friendly
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 5 * 60 * 1000); 
-    return () => clearInterval(interval);
   }, []);
 
   const processedSeries = useMemo(() => {
-    let list = [...series].filter(s =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase())
+    // ✅ Fix 4: Safe filter with empty string fallback
+    let list = [...series].filter((s) =>
+      (s.name || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     if (formatFilter !== "All") {
@@ -201,7 +205,7 @@ const ErrorState = ({ onRetry }) => (
     <div className="p-6 bg-red-500/10 rounded-full mb-6">
       <Info className="text-red-500" size={48} />
     </div>
-    <h3 className="text-xl font-black text-white uppercase tracking-tighter">Connection Interrupted</h3>
+    <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Connection Interrupted</h3>
     <p className="text-slate-500 text-sm mt-2 max-w-xs">Tournament service is temporarily unavailable. Check your network or retry.</p>
     <button onClick={onRetry} className="mt-8 px-8 py-3 bg-blue-600 text-white font-black uppercase text-xs rounded-2xl shadow-xl shadow-blue-600/20 hover:scale-105 transition-transform">
       Retry Connection
@@ -211,7 +215,7 @@ const ErrorState = ({ onRetry }) => (
 
 const EmptyState = () => (
   <div className="text-center py-32">
-    <div className="text-slate-700 text-6xl font-black italic uppercase tracking-tighter opacity-20">No Results Found</div>
+    <div className="text-slate-700 dark:text-slate-300 text-6xl font-black italic uppercase tracking-tighter opacity-20">No Results Found</div>
     <p className="text-slate-500 font-bold mt-4 uppercase tracking-[0.3em] text-[10px]">Try adjusting your search or filters</p>
   </div>
 );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Activity } from "lucide-react";
@@ -6,10 +6,15 @@ import logo from "../assets/cricsphere-logo.png";
 import { getLiveMatches as getCurrentMatches } from "../services/api";
 
 /* ---------- 🧮 MATH ENGINE: Over Conversion ---------- */
-const toFractionalOvers = (overs) => {
-  if (!overs) return 0;
-  const wholeOvers = Math.floor(overs);
-  const balls = (overs % 1) * 10;
+const toFractionalOvers = (oversStr) => {
+  if (!oversStr) return 0;
+
+  // oversStr can be like "12.3" meaning 12 overs + 3 balls
+  const parts = String(oversStr).split(".");
+  const wholeOvers = parseInt(parts[0] || "0", 10);
+  const balls = parseInt(parts[1] || "0", 10);
+
+  // balls are out of 6
   return wholeOvers + balls / 6;
 };
 
@@ -19,8 +24,12 @@ const CountUp = ({ to = 0, duration = 800, suffix = "" }) => {
 
   useEffect(() => {
     let start = 0;
-    const end = parseInt(to);
-    if (end === 0) return;
+    const end = parseInt(to || 0, 10);
+    if (!end) {
+      setVal(0);
+      return;
+    }
+
     const step = Math.max(1, end / (duration / 16));
     const id = setInterval(() => {
       start += step;
@@ -31,6 +40,7 @@ const CountUp = ({ to = 0, duration = 800, suffix = "" }) => {
         setVal(Math.floor(start));
       }
     }, 16);
+
     return () => clearInterval(id);
   }, [to, duration]);
 
@@ -79,73 +89,161 @@ const TrailerModal = ({ open, onClose }) => (
   </AnimatePresence>
 );
 
+/* ---------- 🟢 MAIN INTRO SECTION ---------- */
 export default function IntroSection() {
   const [trailerOpen, setTrailerOpen] = useState(false);
-  const [liveMatch, setLiveMatch] = useState(null);
-  const [matches, setMatches] = useState([]);
 
-  /* ---------- Fetch Live Engine ---------- */
+  // full flattened list of matches from RapidAPI
+  const [matches, setMatches] = useState([]);
+  const [liveMatch, setLiveMatch] = useState(null);
+
+  const [loadingLive, setLoadingLive] = useState(true);
+
+  /* ---------- Helper: determine match finished ---------- */
+  const isMatchDone = (status = "") => {
+    const s = String(status).toLowerCase();
+    return ["won", "draw", "tie", "abandon", "result", "complete"].some((k) =>
+      s.includes(k)
+    );
+  };
+
+  /* ---------- RapidAPI Live Fetch Engine ---------- */
   useEffect(() => {
+    let mounted = true;
+
+    const flattenMatchesFromRapid = (raw) => {
+      // RapidAPI structure:
+      // data.typeMatches[].seriesMatches[].seriesAdWrapper.matches[]
+      const list =
+        raw?.typeMatches?.flatMap((tm) =>
+          tm?.seriesMatches?.flatMap(
+            (sm) => sm?.seriesAdWrapper?.matches || []
+          )
+        ) || [];
+
+      return Array.isArray(list) ? list : [];
+    };
+
     const fetchLive = async () => {
       try {
+        setLoadingLive(true);
+
         const res = await getCurrentMatches();
-        const list = res.data?.data || [];
+        const raw = res?.data;
+
+        const list = flattenMatchesFromRapid(raw);
+
+        if (!mounted) return;
+
         setMatches(list);
 
-        const live = list.find(
-          (m) =>
-            !["won", "draw", "tie", "abandon", "result", "complete"].some((k) =>
-              m.status?.toLowerCase().includes(k)
-            )
-        );
+        // Pick ONE live match (first not completed)
+        const oneLive =
+          list.find((m) => !isMatchDone(m?.matchInfo?.status)) || list[0] || null;
 
-        setLiveMatch(live || list[0] || null);
+        setLiveMatch(oneLive);
       } catch (e) {
         console.error("Telemetry fetch failed", e);
+        if (mounted) {
+          setMatches([]);
+          setLiveMatch(null);
+        }
+      } finally {
+        if (mounted) setLoadingLive(false);
       }
     };
 
     fetchLive();
+
+    // refresh every 30s (frontend refresh) but backend TTL protects RapidAPI quota
     const t = setInterval(fetchLive, 30000);
-    return () => clearInterval(t);
+
+    return () => {
+      mounted = false;
+      clearInterval(t);
+    };
   }, []);
 
-  /* ---------- CRR + RRR INTELLIGENCE ---------- */
-  let crr = null,
-    rrr = null,
-    runsLeft = null,
-    oversLeft = null;
-
-  if (liveMatch?.score?.length >= 2) {
-    const innings1 = liveMatch.score[0];
-    const currentInnings = liveMatch.score[liveMatch.score.length - 1];
-
-    const decimalOvers = toFractionalOvers(currentInnings.o);
-
-    if (decimalOvers > 0) {
-      crr = (currentInnings.r / decimalOvers).toFixed(2);
+  /* ---------- Match Derived Values (CRR/RRR) ---------- */
+  const derived = useMemo(() => {
+    if (!liveMatch) {
+      return {
+        team1: "Team 1",
+        team2: "Team 2",
+        status: "No live match found",
+        runs: 0,
+        wkts: 0,
+        overs: "0.0",
+        crr: null,
+        rrr: null,
+        runsLeft: null,
+        oversLeft: null,
+      };
     }
+
+    const info = liveMatch?.matchInfo;
+    const score = liveMatch?.matchScore;
+
+    const team1 = info?.team1?.teamName || "Team 1";
+    const team2 = info?.team2?.teamName || "Team 2";
+    const status = info?.status || "Match status unavailable";
+
+    // Try to extract current innings score safely
+    // Usually live match uses team1Score/team2Score with inngs1 etc.
+    const team1Inng = score?.team1Score?.inngs1 || null;
+    const team2Inng = score?.team2Score?.inngs1 || null;
+
+    // Decide current batting innings:
+    // If team2 innings exists => chase is on
+    const currentInng = team2Inng || team1Inng || null;
+
+    const runs = currentInng?.runs || 0;
+    const wkts = currentInng?.wickets || 0;
+    const overs = currentInng?.overs || "0.0";
+
+    // CRR
+    const decimalOvers = toFractionalOvers(overs);
+    const crr = decimalOvers > 0 ? (runs / decimalOvers).toFixed(2) : null;
+
+    // RRR (only for limited overs and if chase is happening)
+    const matchType = String(info?.matchFormat || info?.matchType || "")
+      .toLowerCase()
+      .trim();
 
     const formatLimit =
-      liveMatch.matchType?.toLowerCase() === "t20"
-        ? 20
-        : liveMatch.matchType?.toLowerCase() === "odi"
-        ? 50
-        : null;
+      matchType === "t20" ? 20 : matchType === "odi" ? 50 : null;
 
-    if (innings1 && currentInnings && formatLimit) {
-      const target = innings1.r + 1;
-      runsLeft = target - currentInnings.r;
-      oversLeft = formatLimit - decimalOvers;
+    let rrr = null;
+    let runsLeft = null;
+    let oversLeft = null;
 
-      if (oversLeft > 0 && runsLeft > 0) {
-        rrr = (runsLeft / (formatLimit - decimalOvers)).toFixed(2);
+    // Only calculate target if innings1 exists and innings2 exists (chase)
+    if (team1Inng && team2Inng && formatLimit) {
+      const target = (team1Inng?.runs || 0) + 1;
+      runsLeft = target - (team2Inng?.runs || 0);
+      oversLeft = formatLimit - toFractionalOvers(team2Inng?.overs || "0.0");
+
+      if (runsLeft > 0 && oversLeft > 0) {
+        rrr = (runsLeft / oversLeft).toFixed(2);
       }
     }
-  }
+
+    return {
+      team1,
+      team2,
+      status,
+      runs,
+      wkts,
+      overs,
+      crr,
+      rrr,
+      runsLeft,
+      oversLeft,
+    };
+  }, [liveMatch]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#05070c] text-slate-900 dark:text-white">
+    <div className="min-h-screen bg-white dark:bg-[#05070c] text-slate-900 dark:text-white relative">
       {/* Subtle Background */}
       <div className="absolute inset-0 -z-10">
         <div className="h-full w-full bg-gradient-to-b from-slate-50 via-white to-white dark:from-[#05070c] dark:via-[#05070c] dark:to-[#05070c]" />
@@ -240,73 +338,77 @@ export default function IntroSection() {
               <Activity className="text-slate-400" size={18} />
             </div>
 
-            {liveMatch ? (
-              <>
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold">
-                    {liveMatch.teams?.[0]}{" "}
-                    <span className="text-slate-400 font-normal">vs</span>{" "}
-                    {liveMatch.teams?.[1]}
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {liveMatch.status}
-                  </p>
-                </div>
-
-                {liveMatch.score?.length > 0 && (
-                  <div className="space-y-6">
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <div className="text-4xl font-bold tracking-tight">
-                          {liveMatch.score.at(-1).r}
-                          <span className="text-slate-400">/</span>
-                          {liveMatch.score.at(-1).w}
-                        </div>
-                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                          Overs: {liveMatch.score.at(-1).o}
-                        </p>
-                      </div>
-
-                      <div className="text-right space-y-1">
-                        {crr && (
-                          <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                            CRR: {crr}
-                          </div>
-                        )}
-                        {rrr && (
-                          <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                            RRR: {rrr}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {rrr && (
-                      <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                          Target Tracker
-                        </p>
-                        <p className="mt-1 text-sm font-semibold">
-                          Need{" "}
-                          <span className="text-emerald-600 dark:text-emerald-400">
-                            {runsLeft}
-                          </span>{" "}
-                          runs in{" "}
-                          <span className="text-blue-600 dark:text-blue-400">
-                            {oversLeft.toFixed(1)}
-                          </span>{" "}
-                          overs
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
+            {loadingLive ? (
               <div className="py-14 text-center">
                 <div className="w-9 h-9 border-2 border-slate-200 dark:border-white/10 border-t-slate-900 dark:border-t-white rounded-full animate-spin mx-auto mb-4" />
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   Loading live match feed...
+                </p>
+              </div>
+            ) : liveMatch ? (
+              <>
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold">
+                    {derived.team1}{" "}
+                    <span className="text-slate-400 font-normal">vs</span>{" "}
+                    {derived.team2}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {derived.status}
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <div className="text-4xl font-bold tracking-tight">
+                        {derived.runs}
+                        <span className="text-slate-400">/</span>
+                        {derived.wkts}
+                      </div>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Overs: {derived.overs}
+                      </p>
+                    </div>
+
+                    <div className="text-right space-y-1">
+                      {derived.crr && (
+                        <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                          CRR: {derived.crr}
+                        </div>
+                      )}
+                      {derived.rrr && (
+                        <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                          RRR: {derived.rrr}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {derived.rrr && derived.runsLeft != null && derived.oversLeft != null && (
+                    <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        Target Tracker
+                      </p>
+                      <p className="mt-1 text-sm font-semibold">
+                        Need{" "}
+                        <span className="text-emerald-600 dark:text-emerald-400">
+                          {derived.runsLeft}
+                        </span>{" "}
+                        runs in{" "}
+                        <span className="text-blue-600 dark:text-blue-400">
+                          {Number(derived.oversLeft).toFixed(1)}
+                        </span>{" "}
+                        overs
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="py-14 text-center">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  No live match found right now.
                 </p>
               </div>
             )}
