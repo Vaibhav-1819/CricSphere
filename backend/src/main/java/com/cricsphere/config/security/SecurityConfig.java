@@ -60,24 +60,29 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
             .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authEntryPoint))
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+
                     // 🔓 Auth Endpoints (Public)
                     .requestMatchers("/api/v1/auth/**").permitAll()
-                    
-                    // 🔓 Public Data Endpoints (GET requests for Guests)
+
+                    // 🔓 Public Data Endpoints (Guests can view)
                     .requestMatchers(HttpMethod.GET, "/api/v1/cricket/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/stats/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/news/**").permitAll()
-                    
-                    // 🔓 System & Static Resources
-                    .requestMatchers("/", "/error", "/favicon.ico", "/actuator/**").permitAll()
-                    
-                    // 🔒 Secured Operations (Profile updates, Premium features)
+
+                    // 🔓 Basic system routes
+                    .requestMatchers("/", "/error", "/favicon.ico").permitAll()
+
+                    // 🔓 Actuator health only (safe)
+                    .requestMatchers("/actuator/health").permitAll()
+
+                    // 🔒 Everything else requires login
                     .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
@@ -88,17 +93,25 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration config = new CorsConfiguration();
-        
-        config.setAllowedOrigins(Arrays.asList(
+
+        // ✅ Use only allowedOriginPatterns (recommended for Vercel wildcard)
+        config.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
-                "https://cricsphere-version1.vercel.app"
+                "https://*.vercel.app"
         ));
-        
-        config.setAllowedOriginPatterns(List.of("https://*.vercel.app"));
+
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+
+        config.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "X-Requested-With"
+        ));
+
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

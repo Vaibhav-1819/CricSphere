@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   Search, BarChart2, X, Trophy, Check, 
-  ArrowUpDown, Shield, Users, ChevronRight, Activity
+  Shield, Users, ChevronRight, Activity
 } from "lucide-react";
 import axios from "../services/api";
+
 export default function Teams() {
-  const [teams, setTeams] = useState([]);
+  const [teams, setTeams] = useState([]); // Initialized as array
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("rank");
@@ -17,20 +18,30 @@ export default function Teams() {
 
   useEffect(() => {
     axios.get("/api/v1/cricket/teams/international")
-      .then(res => setTeams(res.data))
-      .catch(err => console.error("Error fetching teams", err))
+      .then(res => {
+        // Defensive check: Ensure we are setting an array
+        const data = Array.isArray(res.data) ? res.data : (res.data?.teams || []);
+        setTeams(data);
+      })
+      .catch(err => {
+        console.error("Error fetching teams", err);
+        setTeams([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const sortedTeams = useMemo(() => {
+    // FIX: Guard against non-iterable 'teams'
+    if (!Array.isArray(teams)) return [];
+
     let list = [...teams].filter(team =>
-      team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      team.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       team.code?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (sortBy === "trophies") list.sort((a, b) => b.trophies - a.trophies);
-    else if (sortBy === "rank") list.sort((a, b) => a.avgRank - b.avgRank);
-    else list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "trophies") list.sort((a, b) => (b.trophies || 0) - (a.trophies || 0));
+    else if (sortBy === "rank") list.sort((a, b) => (a.avgRank || 99) - (b.avgRank || 99));
+    else list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
     return list;
   }, [teams, searchTerm, sortBy]);
@@ -185,17 +196,17 @@ const TeamCard = ({ team, compareMode, isSelected, onSelect }) => (
       </div>
     )}
 
-    <img src={team.logo} className="h-16 mb-8 filter drop-shadow-lg grayscale group-hover:grayscale-0 transition-all" />
+    <img src={team.logo} alt={team.name} className="h-16 mb-8 filter drop-shadow-lg grayscale group-hover:grayscale-0 transition-all" />
 
     <h3 className="font-black text-2xl tracking-tighter uppercase italic mb-1">{team.name}</h3>
     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-6">
-      <Users size={12} className="text-blue-500" /> {team.captain}
+      <Users size={12} className="text-blue-500" /> {team.captain || "TBA"}
     </p>
 
     <div className="flex justify-between items-center pt-6 border-t border-white/5">
       <div className="flex flex-col">
         <span className="text-[10px] font-black text-slate-600 uppercase">Titles</span>
-        <span className="font-black text-amber-500">🏆 {team.trophies}</span>
+        <span className="font-black text-amber-500">🏆 {team.trophies || 0}</span>
       </div>
       {!compareMode && (
         <Link to={`/teams/${team.id}`} className="p-3 bg-white/5 rounded-2xl hover:bg-blue-600 transition-colors group">
@@ -206,68 +217,80 @@ const TeamCard = ({ team, compareMode, isSelected, onSelect }) => (
   </motion.div>
 );
 
-const ComparisonModal = ({ team1, team2, onClose }) => (
-  <motion.div 
-    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-    className="fixed inset-0 bg-[#080a0f]/90 backdrop-blur-md z-[100] flex items-center justify-center p-4"
-  >
+const ComparisonModal = ({ team1, team2, onClose }) => {
+  if (!team1 || !team2) return null;
+
+  return (
     <motion.div 
-      initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
-      className="bg-[#111a2e] border border-white/5 p-10 rounded-[3rem] max-w-4xl w-full shadow-2xl relative overflow-hidden"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-[#080a0f]/90 backdrop-blur-md z-[100] flex items-center justify-center p-4"
     >
-       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-emerald-500" />
-       
-       <button onClick={onClose} className="absolute top-6 right-6 p-2 hover:bg-white/5 rounded-xl text-slate-500 transition-colors">
-         <X size={24} />
-       </button>
+      <motion.div 
+        initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
+        className="bg-[#111a2e] border border-white/5 p-10 rounded-[3rem] max-w-4xl w-full shadow-2xl relative overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-emerald-500" />
+        
+        <button onClick={onClose} className="absolute top-6 right-6 p-2 hover:bg-white/5 rounded-xl text-slate-500 transition-colors">
+          <X size={24} />
+        </button>
 
-       <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-12 text-center">
-         Head-to-Head <span className="text-blue-500">Analysis</span>
-       </h2>
+        <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-12 text-center">
+          Head-to-Head <span className="text-blue-500">Analysis</span>
+        </h2>
 
-       <div className="grid grid-cols-3 items-center gap-8">
-          <div className="text-center">
-             <img src={team1.logo} className="h-28 mx-auto mb-4" />
-             <p className="text-xl font-black uppercase italic">{team1.name}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-8">
+          <div className="text-center order-2 md:order-1">
+            <img src={team1.logo} alt={team1.name} className="h-28 mx-auto mb-4" />
+            <p className="text-xl font-black uppercase italic">{team1.name}</p>
           </div>
 
-          <div className="space-y-6">
-             <StatCompare label="Average Rank" val1={team1.avgRank} val2={team2.avgRank} inverse />
-             <StatCompare label="Total Titles" val1={team1.trophies} val2={team2.trophies} />
-             <StatCompare label="Win Rate" val1={`${team1.winRate}%`} val2={`${team2.winRate}%`} />
+          <div className="space-y-6 order-1 md:order-2">
+            <StatCompare label="Average Rank" val1={team1.avgRank} val2={team2.avgRank} inverse />
+            <StatCompare label="Total Titles" val1={team1.trophies} val2={team2.trophies} />
+            <StatCompare label="Win Rate" val1={team1.winRate} val2={team2.winRate} suffix="%" />
           </div>
 
-          <div className="text-center">
-             <img src={team2.logo} className="h-28 mx-auto mb-4" />
-             <p className="text-xl font-black uppercase italic">{team2.name}</p>
+          <div className="text-center order-3">
+            <img src={team2.logo} alt={team2.name} className="h-28 mx-auto mb-4" />
+            <p className="text-xl font-black uppercase italic">{team2.name}</p>
           </div>
-       </div>
+        </div>
 
-       <div className="mt-12 pt-8 border-t border-white/5 text-center">
+        <div className="mt-12 pt-8 border-t border-white/5 text-center">
           <button onClick={onClose} className="px-12 py-3 bg-white text-black font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-blue-600 hover:text-white transition-all">
             Dismiss Analysis
           </button>
-       </div>
+        </div>
+      </motion.div>
     </motion.div>
-  </motion.div>
-);
+  );
+};
 
-const StatCompare = ({ label, val1, val2, inverse = false }) => {
-  const v1 = parseFloat(val1);
-  const v2 = parseFloat(val2);
+const StatCompare = ({ label, val1, val2, inverse = false, suffix = "" }) => {
+  const v1 = parseFloat(val1) || 0;
+  const v2 = parseFloat(val2) || 0;
+  
+  // Logic for visual bars
   const win1 = inverse ? v1 < v2 : v1 > v2;
   const win2 = inverse ? v2 < v1 : v2 > v1;
 
   return (
     <div className="text-center">
-       <p className="text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">{label}</p>
-       <div className="flex justify-between items-center bg-black/20 p-3 rounded-xl border border-white/5">
-          <span className={`font-black ${win1 ? "text-blue-500 text-lg" : "text-slate-500"}`}>{val1}</span>
-          <div className="h-1 flex-1 mx-4 bg-white/5 rounded-full overflow-hidden">
-             <div className={`h-full bg-blue-500 transition-all`} style={{ width: win1 ? '100%' : '30%' }} />
-          </div>
-          <span className={`font-black ${win2 ? "text-blue-500 text-lg" : "text-slate-500"}`}>{val2}</span>
-       </div>
+      <p className="text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">{label}</p>
+      <div className="flex justify-between items-center bg-black/20 p-3 rounded-xl border border-white/5">
+        <span className={`font-black ${win1 ? "text-blue-500 text-lg" : "text-slate-500"}`}>
+          {val1}{suffix}
+        </span>
+        <div className="h-1 flex-1 mx-4 bg-white/5 rounded-full overflow-hidden flex">
+          <div 
+            className={`h-full transition-all duration-700 ${win1 ? 'bg-blue-500 w-full' : 'bg-slate-700 w-1/3'}`} 
+          />
+        </div>
+        <span className={`font-black ${win2 ? "text-blue-500 text-lg" : "text-slate-500"}`}>
+          {val2}{suffix}
+        </span>
+      </div>
     </div>
   );
-}
+};

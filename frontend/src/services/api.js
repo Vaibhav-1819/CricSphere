@@ -49,7 +49,8 @@ export const matchApi = {
   getRecent: () => api.get("/api/v1/cricket/recent"),
   getMatchDetail: (id) => api.get(`/api/v1/cricket/match/${id}`),
   getScorecard: (id) => api.get(`/api/v1/cricket/scorecard/${id}`),
-  getCommentary: (id) => api.get(`/api/v1/cricket/commentary/${id}`),
+  // 🟢 NEW: Added for Teams Hub
+  getTeams: (type = "all") => api.get(`/api/v1/cricket/teams/${type}`),
 };
 
 export const seriesApi = {
@@ -57,11 +58,19 @@ export const seriesApi = {
   getDetails: (id) => api.get(`/api/v1/cricket/series/${id}`),
 };
 
-/* --- LEGACY NAMED EXPORTS (Ensures compatibility with existing codebase) --- */
+// 🟢 NEW: Added for Stats Page
+export const statsApi = {
+  getIccRankings: (format) => api.get(`/api/v1/stats/icc?format=${format}`),
+};
+
+/* --- LEGACY NAMED EXPORTS --- */
 export const getSeries = () => api.get("/api/v1/cricket/series");
 export const getSeriesDetail = (id) => api.get(`/api/v1/cricket/series/${id}`);
-export const getCurrentMatches = () => api.get("/api/v1/cricket/live");
 export const getLiveMatches = () => api.get("/api/v1/cricket/live");
 export const getNews = () => api.get("/api/v1/cricket/news");
+
+// 🟢 NEW: Compatibility exports for Teams and Rankings
+export const getTeams = (type) => api.get(`/api/v1/cricket/teams/${type || 'all'}`);
+export const getRankings = (format) => api.get(`/api/v1/stats/icc?format=${format || 'T20'}`);
 
 export default api;

@@ -28,19 +28,19 @@ public class RapidApiClient {
     private String rapidApiHost;
 
     private final RestTemplate restTemplate;
+
     private static final int DAILY_LIMIT = 100;
 
     private LocalDate currentDay = LocalDate.now();
     private final AtomicInteger dailyCallCount = new AtomicInteger(0);
 
-    // Using a simple cache. For production, consider @Cacheable or Caffeine
+    // Cache stores even stale values (used as fallback)
     private final Map<String, CachedResponse> cache = new ConcurrentHashMap<>();
-    
-    // A pool of locks to prevent memory leaks while still deduplicating requests
+
+    // Keep locks stable (no remove) to avoid race issues
     private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
     public RapidApiClient(RestTemplateBuilder restTemplateBuilder) {
-        // Essential: Timeouts prevent the "Stuck Thread" problem
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(Duration.ofSeconds(5))
                 .setReadTimeout(Duration.ofSeconds(10))
@@ -49,37 +49,49 @@ public class RapidApiClient {
 
     public String fetch(String url, long ttlMillis) {
         rotateDayIfNeeded();
-        String key = "GET::" + url;
 
-        // 1. Immediate Cache Check
+        String key = "GET::" + rapidApiHost + "::" + url;
+
+        // 1) Cache check
         CachedResponse cached = cache.get(key);
-        if (cached != null && !cached.isExpired()) {
+
+        // If expired, remove it (prevents cache growing forever)
+        if (cached != null && cached.isExpired()) {
+            cache.remove(key);
+            cached = null;
+        }
+
+        if (cached != null) {
             return cached.body;
         }
 
-        // 2. Thread-safe Deduplication
+        // 2) Deduplicate requests per URL
         Object lock = locks.computeIfAbsent(key, k -> new Object());
 
         synchronized (lock) {
-            try {
-                // Double-check after acquiring lock
-                cached = cache.get(key);
-                if (cached != null && !cached.isExpired()) {
-                    return cached.body;
-                }
+            // Double check after lock
+            cached = cache.get(key);
 
-                // 3. Quota Guard
-                if (dailyCallCount.get() >= DAILY_LIMIT) {
-                    log.warn("🚨 API limit hit. Serving stale data.");
-                    return (cached != null) ? cached.body : "{\"error\":\"Quota exceeded\"}";
-                }
-
-                return executeRequest(url, key, ttlMillis);
-
-            } finally {
-                // Cleanup lock to prevent map bloating
-                locks.remove(key);
+            if (cached != null && cached.isExpired()) {
+                cache.remove(key);
+                cached = null;
             }
+
+            if (cached != null) {
+                return cached.body;
+            }
+
+            // 3) Quota Guard
+            if (dailyCallCount.get() >= DAILY_LIMIT) {
+                log.warn("🚨 RapidAPI daily quota hit ({}). Serving fallback.", DAILY_LIMIT);
+
+                CachedResponse lastKnown = cache.get(key);
+                if (lastKnown != null) return lastKnown.body;
+
+                return "{\"error\":true,\"message\":\"RapidAPI quota exceeded\",\"data\":null}";
+            }
+
+            return executeRequest(url, key, ttlMillis);
         }
     }
 
@@ -89,24 +101,36 @@ public class RapidApiClient {
             headers.set("x-rapidapi-key", rapidApiKey);
             headers.set("x-rapidapi-host", rapidApiHost);
 
-            log.info("📡 Requesting RapidAPI: {} (Count: {})", url, dailyCallCount.get() + 1);
-            
+            log.info("📡 RapidAPI Request: {} (Call #{})", url, dailyCallCount.get() + 1);
+
             ResponseEntity<String> response = restTemplate.exchange(
-                url, HttpMethod.GET, new HttpEntity<>(headers), String.class
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    String.class
             );
 
-            dailyCallCount.incrementAndGet();
             String body = response.getBody();
-            
-            if (body != null) {
+
+            if (body != null && !body.isBlank()) {
+                dailyCallCount.incrementAndGet();
                 cache.put(key, new CachedResponse(body, ttlMillis));
+                return body;
             }
-            return body;
+
+            log.warn("⚠ RapidAPI returned empty body: {}", url);
+            return "{\"error\":true,\"message\":\"Empty response from RapidAPI\",\"data\":null}";
 
         } catch (Exception e) {
             log.error("❌ RapidAPI Request Failed: {}", e.getMessage());
+
             CachedResponse lastKnown = cache.get(key);
-            return (lastKnown != null) ? lastKnown.body : null;
+            if (lastKnown != null) {
+                log.warn("Serving stale cached data for {}", url);
+                return lastKnown.body;
+            }
+
+            return "{\"error\":true,\"message\":\"RapidAPI request failed\",\"data\":null}";
         }
     }
 
@@ -115,7 +139,7 @@ public class RapidApiClient {
         if (!today.equals(currentDay)) {
             currentDay = today;
             dailyCallCount.set(0);
-            log.info("🔄 Quota reset for new day: {}", today);
+            log.info("🔄 RapidAPI quota reset for new day: {}", today);
         }
     }
 

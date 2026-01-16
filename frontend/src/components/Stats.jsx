@@ -1,30 +1,47 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
-  Trophy, Globe, Star, Activity, BarChart3, ChevronUp, Loader2
+  Trophy, Globe, Star, Activity, BarChart3, ChevronUp, Loader2, Info
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "../services/api";
+
 export default function Stats() {
-  const [format, setFormat] = useState("T20");
-  const [data, setData] = useState(null);
+  const [format, setFormat] = useState("T20"); // TEST, ODI, T20
+  const [rawData, setRawData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    axios.get("/api/v1/cricket/rankings")
-      .then(res => setData(res.data))
-      .catch(() => setData(null))
+    // Passing format as a query param ensures RapidApiClient generates a unique cache key
+    axios.get(`/api/v1/cricket/rankings?format=${format.toLowerCase()}`)
+      .then(res => {
+        setRawData(res.data);
+        setError(false);
+      })
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [format]);
 
-  if (loading) {
-    return (
-      <div className="h-screen bg-[#080a0f] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Syncing ICC Database</span>
-      </div>
-    );
-  }
+  // Logic to extract specific rankings based on the selected format
+  // This maps the complex RapidAPI JSON structure to your clean UI
+  const displayData = useMemo(() => {
+    if (!rawData) return { teams: [], players: [] };
+
+    // Cricbuzz RapidAPI structure helper
+    // Adjust these keys based on your specific API provider's JSON
+    const teamStats = rawData.teams?.filter(t => t.format === format) || [];
+    const playerStats = rawData.players?.filter(p => p.format === format && p.category === "batting") || [];
+
+    return { teams: teamStats, players: playerStats };
+  }, [rawData, format]);
+
+  if (loading) return (
+    <div className="h-screen bg-[#080a0f] flex flex-col items-center justify-center gap-4">
+      <Loader2 className="animate-spin text-blue-500" size={40} />
+      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Decrypting Ranking Matrices</span>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#080a0f] text-white pb-20">
@@ -39,7 +56,7 @@ export default function Stats() {
               World <span className="text-blue-500">Rankings</span>
             </h1>
             <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-4 flex items-center gap-2">
-              <Activity size={14} className="text-blue-500" /> Live ICC Telemetry
+              <Activity size={14} className="text-blue-500" /> ICC Global Telemetry
             </p>
           </div>
 
@@ -57,20 +74,21 @@ export default function Stats() {
         </div>
       </div>
 
-      {/* 🔵 MAIN DATA GRID */}
+      {/* 🔵 DATA GRID */}
       <main className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-8">
-
+        
         {/* --- TEAM RANKINGS --- */}
         <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          layout
           className="col-span-12 lg:col-span-7 bg-[#111a2e] rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl"
         >
-          <div className="p-8 border-b border-white/5 flex justify-between items-center">
+          <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
             <h3 className="font-black uppercase tracking-widest text-sm flex items-center gap-3 text-slate-400">
               <Trophy className="text-amber-500" size={18}/> National Teams
             </h3>
-            <span className="text-[10px] font-black text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full uppercase">Top 10</span>
+            <span className="text-[10px] font-black text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full uppercase tracking-tighter">
+              ICC {format} Standard
+            </span>
           </div>
 
           <div className="overflow-x-auto">
@@ -82,24 +100,27 @@ export default function Stats() {
                   <th className="p-6 text-right">Rating</th>
                 </tr>
               </thead>
-              <tbody>
-                <AnimatePresence mode="wait">
-                  {data?.teams?.map((t, index) => (
+              <tbody className="divide-y divide-white/5">
+                <AnimatePresence mode="popLayout">
+                  {displayData.teams.map((t, index) => (
                     <motion.tr 
-                      key={t.team}
+                      key={t.teamId || t.team}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="group border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+                      exit={{ opacity: 0 }}
+                      className="group hover:bg-white/[0.02] transition-colors"
                     >
                       <td className="p-6 text-blue-500 font-black font-mono">
-                        {t.rank < 10 ? `0${t.rank}` : t.rank}
+                        {index + 1 < 10 ? `0${index + 1}` : index + 1}
                       </td>
-                      <td className="p-6 font-black uppercase tracking-tighter text-lg">{t.team}</td>
-                      <td className="p-6 text-right">
-                        <span className="text-2xl font-black text-white group-hover:text-blue-500 transition-colors">
-                          {t.rating}
-                        </span>
+                      <td className="p-6">
+                        <div className="flex items-center gap-3">
+                           <span className="font-black uppercase tracking-tighter text-lg">{t.team}</span>
+                           {index === 0 && <Star size={12} className="text-amber-500 fill-amber-500" />}
+                        </div>
+                      </td>
+                      <td className="p-6 text-right font-black text-2xl group-hover:text-blue-500 transition-colors">
+                        {t.rating}
                       </td>
                     </motion.tr>
                   ))}
@@ -111,41 +132,38 @@ export default function Stats() {
 
         {/* --- PLAYER RANKINGS --- */}
         <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="col-span-12 lg:col-span-5 bg-[#111a2e] rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl flex flex-col"
+          layout
+          className="col-span-12 lg:col-span-5 bg-[#111a2e] rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl"
         >
           <div className="p-8 border-b border-white/5 flex justify-between items-center bg-blue-600/5">
             <h3 className="font-black uppercase tracking-widest text-sm flex items-center gap-3 text-slate-400">
-              <Star className="text-blue-500" size={18}/> Elite Batters
+              <Star className="text-blue-500" size={18}/> Elite {format} Batters
             </h3>
-            <ChevronUp className="text-emerald-500 animate-bounce" size={18} />
+            <ChevronUp className="text-emerald-500 animate-pulse" size={18} />
           </div>
 
-          <div className="flex-1">
-            {data?.players?.map((p, index) => (
+          <div className="divide-y divide-white/5">
+            {displayData.players.map((p, index) => (
               <motion.div 
-                key={p.name}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="p-6 border-b border-white/5 flex justify-between items-center group hover:bg-white/[0.02]"
+                key={p.id || p.name}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="p-6 flex justify-between items-center group hover:bg-white/[0.02] transition-all"
               >
                 <div className="flex items-center gap-5">
-                  <div className="text-xs font-black text-slate-700">{index + 1}</div>
+                  <div className="text-xs font-black text-slate-700 italic">#{index + 1}</div>
                   <div>
                     <div className="font-black uppercase tracking-tighter group-hover:text-blue-400 transition-colors">{p.name}</div>
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
-                      <Globe size={10} className="text-slate-600"/> {p.country}
+                      <Globe size={10} className="text-blue-500/40"/> {p.country}
                     </div>
                   </div>
                 </div>
-                <div className="text-2xl font-black text-blue-500 italic">{p.rating}</div>
+                <div className="text-2xl font-black text-white group-hover:text-blue-500 transition-colors italic">{p.rating}</div>
               </motion.div>
             ))}
           </div>
         </motion.div>
-
       </main>
 
       {/* 🟠 FOOTER */}
@@ -156,7 +174,7 @@ export default function Stats() {
             ICC Database Synced
           </span>
           <span className="text-slate-800">|</span>
-          <span>Verified Protocol</span>
+          <span className="text-blue-500/50">RapidAPI Node Active</span>
         </div>
         <div className="flex items-center gap-2">
           <BarChart3 size={12} className="text-blue-500"/> CricSphere Analytics Engine v1.0
