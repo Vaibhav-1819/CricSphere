@@ -1,8 +1,8 @@
 import axios from "axios";
 
 /**
- * VITE_API_BASE_URL should be set in Vercel/Render Dashboard.
- * Local fallback: http://localhost:8080
+ * INTELLIGENT BASE URL:
+ * Prioritizes Vercel Environment Variables, then falls back to Localhost.
  */
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -13,7 +13,7 @@ const api = axios.create({
   },
 });
 
-/* --- INTERCEPTORS: JWT Injection --- */
+/* --- INTERCEPTORS: Identity Management --- */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -22,21 +22,22 @@ api.interceptors.request.use((config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-/* --- INTERCEPTORS: Global Error Handling --- */
+/* --- INTERCEPTORS: Session Guard --- */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // If the token is expired or invalid, force logout
+    // If JWT expires (401), clean up local storage and redirect to login
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      // Use replace to prevent back-button loops
       window.location.replace("/login");
     }
     return Promise.reject(error);
   }
 );
 
-/* --- MODULAR API MODULES --- */
+/* --- MODULAR SERVICE MODULES --- */
 export const authApi = {
   login: (credentials) => api.post("/api/v1/auth/login", credentials),
   register: (userData) => api.post("/api/v1/auth/register", userData),
@@ -48,6 +49,7 @@ export const matchApi = {
   getRecent: () => api.get("/api/v1/cricket/recent"),
   getMatchDetail: (id) => api.get(`/api/v1/cricket/match/${id}`),
   getScorecard: (id) => api.get(`/api/v1/cricket/scorecard/${id}`),
+  getCommentary: (id) => api.get(`/api/v1/cricket/commentary/${id}`),
 };
 
 export const seriesApi = {
@@ -55,7 +57,7 @@ export const seriesApi = {
   getDetails: (id) => api.get(`/api/v1/cricket/series/${id}`),
 };
 
-/* --- LEGACY NAMED EXPORTS (Maintains compatibility with existing components) --- */
+/* --- LEGACY NAMED EXPORTS (Ensures compatibility with existing codebase) --- */
 export const getSeries = () => api.get("/api/v1/cricket/series");
 export const getSeriesDetail = (id) => api.get(`/api/v1/cricket/series/${id}`);
 export const getCurrentMatches = () => api.get("/api/v1/cricket/live");

@@ -66,11 +66,18 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authEntryPoint))
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                    // 🔓 Auth Endpoints (Public)
                     .requestMatchers("/api/v1/auth/**").permitAll()
-                    // 🟢 PUBLIC ACCESS: Allow guests to VIEW all data (GET requests)
+                    
+                    // 🔓 Public Data Endpoints (GET requests for Guests)
                     .requestMatchers(HttpMethod.GET, "/api/v1/cricket/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/stats/**").permitAll()
-                    // 🔒 SECURE ACCESS: Modifying data requires authentication
+                    .requestMatchers(HttpMethod.GET, "/api/v1/news/**").permitAll()
+                    
+                    // 🔓 System & Static Resources
+                    .requestMatchers("/", "/error", "/favicon.ico", "/actuator/**").permitAll()
+                    
+                    // 🔒 Secured Operations (Profile updates, Premium features)
                     .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

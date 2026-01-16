@@ -49,8 +49,12 @@ const ScrollToTop = () => {
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-  if (loading) return <div className="h-screen bg-[#080a0f] flex items-center justify-center text-blue-500 font-black uppercase text-xs tracking-widest">Syncing Session...</div>;
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  if (loading) return (
+    <div className="h-screen bg-[#080a0f] flex items-center justify-center">
+      <div className="text-blue-500 font-black uppercase text-xs tracking-[0.3em] animate-pulse">Syncing Session...</div>
+    </div>
+  );
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 const AppLayout = ({ children, toggleDarkMode, darkMode }) => (
@@ -93,13 +97,13 @@ function AppContent() {
       <Toaster position="top-right" />
       
       <Routes>
-        {/* 🟢 ENTRY & AUTH ROUTES (No Header/Footer Layout) */}
+        {/* 🟢 ENTRY & AUTH ROUTES (No Layout) */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/intro" element={<IntroPage />} />
         <Route path="/login" element={<LoginPage />} /> 
         <Route path="/register" element={<RegisterPage />} />
         
-        {/* 🔵 PUBLIC APP HUB (Viewable by Guests - NO Login Required) */}
+        {/* 🔵 PUBLIC APP HUB (Guest Accessible) */}
         {[
           { path: "/home", element: <Home /> },
           { path: "/live-scores", element: <LiveScore /> },
@@ -126,7 +130,7 @@ function AppContent() {
           />
         ))}
 
-        {/* 🔒 SECURED USER ROUTES (Requires Login) */}
+        {/* 🔒 SECURED USER ROUTES (Requires Auth) */}
         {[
           { path: "/profile", element: <ProfilePage /> },
           { path: "/premium", element: <PremiumFeatures /> },
@@ -149,7 +153,12 @@ function AppContent() {
           <div className="h-screen flex flex-col items-center justify-center bg-[#080a0f] text-white">
             <h1 className="text-6xl font-black italic text-blue-500 mb-4 uppercase tracking-tighter">404</h1>
             <p className="uppercase font-black tracking-widest text-[10px] text-slate-500">The Arena is Empty | Page Not Found</p>
-            <button onClick={() => window.location.href='/home'} className="mt-8 px-8 py-3 bg-white text-black font-black uppercase text-[10px] rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-xl">Return to Base</button>
+            <button 
+              onClick={() => window.location.href='/home'} 
+              className="mt-8 px-8 py-3 bg-white text-black font-black uppercase text-[10px] rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-xl"
+            >
+              Return to Base
+            </button>
           </div>
         } />
       </Routes>
@@ -157,10 +166,6 @@ function AppContent() {
   );
 }
 
-/**
- * 🛠️ FIX FOR VERCEL ERROR: 
- * Using 'export default' ensures 'main.jsx' can import this successfully.
- */
 export default function App() {
   return (
     <AuthProvider>
