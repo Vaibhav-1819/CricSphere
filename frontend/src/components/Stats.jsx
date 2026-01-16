@@ -11,7 +11,7 @@ export default function Stats() {
 
   useEffect(() => {
     setLoading(true);
-    axios.get(`/api/v1/stats/icc?format=${format}`)
+    axios.get("/api/v1/cricket/rankings")
       .then(res => setData(res.data))
       .catch(() => setData(null))
       .finally(() => setLoading(false));

@@ -16,7 +16,7 @@ export default function Teams() {
   const [showCompareModal, setShowCompareModal] = useState(false);
 
   useEffect(() => {
-    axios.get("/api/v1/cricket/teams")
+    axios.get("/api/v1/cricket/teams/international")
       .then(res => setTeams(res.data))
       .catch(err => console.error("Error fetching teams", err))
       .finally(() => setLoading(false));

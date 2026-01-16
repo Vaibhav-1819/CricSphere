@@ -87,23 +87,19 @@ public class CricketController {
     }
 
     /* =========================================================
-       TEAMS / PLAYERS / VENUES
-    ========================================================= */
+   TEAMS / PLAYERS / VENUES
+========================================================= */
 
-    @GetMapping("/teams/{type}")
-    public ResponseEntity<String> getTeams(@PathVariable String type) {
-        return ResponseEntity.ok(cricketService.getTeams(type));
-    }
+@GetMapping("/teams")
+public ResponseEntity<String> getTeamsDefault() {
+    return ResponseEntity.ok(cricketService.getTeams("all"));
+}
 
-    @GetMapping("/player/{playerId}")
-    public ResponseEntity<String> getPlayer(@PathVariable String playerId) {
-        return ResponseEntity.ok(cricketService.getPlayerInfo(playerId));
-    }
+@GetMapping("/teams/{type}")
+public ResponseEntity<String> getTeams(@PathVariable String type) {
+    return ResponseEntity.ok(cricketService.getTeams(type));
+}
 
-    @GetMapping("/venue/{venueId}")
-    public ResponseEntity<String> getVenue(@PathVariable String venueId) {
-        return ResponseEntity.ok(cricketService.getVenueInfo(venueId));
-    }
 
     /* =========================================================
        NEWS
