@@ -1,38 +1,58 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Check, X, Zap, Crown, Shield, BarChart2, 
-  Users, BrainCircuit, ArrowRight 
-} from 'lucide-react';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, X, Crown, Shield, BarChart2, BrainCircuit, Zap } from "lucide-react";
 
-// --- 1. SUB-COMPONENT: MODAL (Fixed Reference Error) ---
+/* ==========================================================
+   MODAL
+========================================================== */
 const LaunchingSoonModal = ({ isOpen, onClose, plan }) => {
   if (!isOpen) return null;
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <motion.div 
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        <motion.button
+          type="button"
+          aria-label="Close modal"
           onClick={onClose}
-          className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         />
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0, y: 10 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative bg-slate-900 border border-white/10 w-full max-w-sm p-8 rounded-[2.5rem] shadow-2xl text-center"
+          exit={{ scale: 0.96, opacity: 0, y: 10 }}
+          className="relative w-full max-w-sm rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0b0f16] shadow-2xl p-6"
         >
-          <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Crown size={32} />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <Crown size={18} className="text-blue-500" />
+            </div>
+
+            <div className="flex-1">
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
+                Premium Coming Soon
+              </h2>
+              <p className="text-[12px] font-semibold text-slate-500">
+                Selected plan: <span className="text-blue-500">{plan}</span>
+              </p>
+            </div>
           </div>
-          <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter">Arena Pro</h2>
-          <p className="text-slate-400 text-sm mb-6 uppercase tracking-widest font-bold">Plan: {plan}</p>
-          <div className="bg-white/5 p-4 rounded-2xl mb-6 text-xs text-left border border-white/5 space-y-3">
-             <p className="text-blue-400 font-black uppercase tracking-widest">Coming Soon</p>
-             <p className="text-slate-300">We are finalizing the payment gateway for global access. Check back during the IPL 2026 launch.</p>
+
+          <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-4">
+            <p className="text-[12px] text-slate-600 dark:text-slate-300 leading-relaxed">
+              We’re finalizing payment integration. Premium plans will be available soon.
+            </p>
           </div>
-          <button onClick={onClose} className="w-full py-4 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] bg-blue-600 hover:bg-blue-500 text-white transition-all">
-            Understood
+
+          <button
+            onClick={onClose}
+            className="mt-5 w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-extrabold uppercase tracking-wide transition-all"
+          >
+            Okay
           </button>
         </motion.div>
       </div>
@@ -40,153 +60,217 @@ const LaunchingSoonModal = ({ isOpen, onClose, plan }) => {
   );
 };
 
-// --- 2. SUB-COMPONENT: PRICING CARD (Optimized Size) ---
-const PricingCard = ({ title, price, period, features, recommended = false, onSelect }) => (
-  <motion.div 
-    whileHover={{ y: -5 }}
-    className={`relative p-6 md:p-8 rounded-[2.5rem] border flex flex-col h-full transition-all duration-500 ${
-      recommended 
-        ? 'border-blue-500 bg-blue-600/5 shadow-[0_0_40px_rgba(59,130,246,0.1)]' 
-        : 'bg-white/5 border-white/10 hover:border-white/20'
-    }`}
-  >
-    {recommended && (
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-xl">
-        Recommended
-      </div>
-    )}
-    <div className="mb-8 text-center">
-      <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mb-4">{title}</h3>
-      <div className="flex items-baseline justify-center gap-1">
-        <span className="text-4xl font-black tracking-tighter text-white">{price}</span>
-        {price !== "Free" && <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{period}</span>}
-      </div>
-    </div>
-    <ul className="space-y-4 mb-8 flex-grow">
-      {features.map((feat, i) => (
-        <li key={i} className="flex items-start gap-3 text-xs font-medium">
-          {feat.included ? (
-            <Check size={14} className="text-blue-500 shrink-0 mt-0.5" />
-          ) : (
-            <X size={14} className="text-slate-700 shrink-0 mt-0.5" />
-          )}
-          <span className={!feat.included ? 'text-slate-600 line-through' : 'text-slate-300'}>{feat.text}</span>
-        </li>
-      ))}
-    </ul>
-    <button 
-      onClick={() => onSelect(title)}
-      className={`w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all ${
-        recommended 
-          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500' 
-          : 'bg-white/5 text-white hover:bg-white/10 border border-white/10'
+/* ==========================================================
+   PRICING CARD (Compact)
+========================================================== */
+const PricingCard = ({
+  title,
+  price,
+  period,
+  features,
+  recommended = false,
+  onSelect,
+}) => {
+  return (
+    <motion.div
+      whileHover={{ y: -3 }}
+      className={`relative rounded-3xl border p-5 flex flex-col h-full transition-all ${
+        recommended
+          ? "border-blue-500/50 bg-blue-500/[0.06]"
+          : "border-black/10 dark:border-white/10 bg-white dark:bg-[#0b0f16]"
       }`}
     >
-      {price === "Free" ? 'Current Plan' : 'Get Started'}
-    </button>
-  </motion.div>
+      {recommended && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-blue-600 text-white shadow-lg">
+          Best Value
+        </div>
+      )}
+
+      <div className="mb-4 text-center">
+        <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500">
+          {title}
+        </p>
+
+        <div className="mt-2 flex items-end justify-center gap-1">
+          <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+            {price}
+          </span>
+          {price !== "Rs.0" && (
+            <span className="text-[12px] font-bold text-slate-500">{period}</span>
+          )}
+        </div>
+      </div>
+
+      <ul className="space-y-3 mb-5 flex-grow">
+        {features.map((feat, i) => (
+          <li key={i} className="flex items-start gap-2 text-[12px]">
+            {feat.included ? (
+              <Check size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+            ) : (
+              <X size={14} className="text-slate-300 dark:text-slate-700 mt-0.5 shrink-0" />
+            )}
+
+            <span
+              className={
+                feat.included
+                  ? "text-slate-700 dark:text-slate-300"
+                  : "text-slate-400 line-through"
+              }
+            >
+              {feat.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <button
+        onClick={() => onSelect(title)}
+        className={`w-full py-3 rounded-2xl text-[11px] font-extrabold uppercase tracking-wide transition-all ${
+          recommended
+            ? "bg-blue-600 hover:bg-blue-500 text-white"
+            : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10"
+        }`}
+      >
+        {price === "Rs.0" ? "Current Plan" : "Upgrade"}
+      </button>
+    </motion.div>
+  );
+};
+
+/* ==========================================================
+   FEATURE ITEM
+========================================================== */
+const FeatureItem = ({ icon: Icon, title }) => (
+  <div className="flex flex-col items-center text-center">
+    <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-3">
+      <Icon size={18} className="text-blue-500" />
+    </div>
+    <span className="text-[11px] font-extrabold text-slate-600 dark:text-slate-400">
+      {title}
+    </span>
+  </div>
 );
 
-// --- 3. MAIN PAGE COMPONENT ---
-const PremiumFeatures = () => {
-  const [billingCycle, setBillingCycle] = useState('monthly');
+/* ==========================================================
+   MAIN PAGE
+========================================================== */
+export default function PremiumFeatures() {
+  const [billingCycle, setBillingCycle] = useState("monthly");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState("");
 
   const handlePlanSelect = (planTitle) => {
-    if (planTitle.includes('Fan')) return;
+    if (planTitle.toLowerCase().includes("fan")) return; // free plan = no modal
     setSelectedPlan(planTitle);
     setIsModalOpen(true);
   };
 
   return (
-    <div className="min-h-screen bg-[#080a0f] text-white font-sans py-16 px-6">
-      <LaunchingSoonModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} plan={selectedPlan} />
+    <div className="min-h-screen bg-slate-50 dark:bg-[#05070c] text-slate-900 dark:text-slate-200">
+      <LaunchingSoonModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        plan={selectedPlan}
+      />
 
-      {/* Constraints: Max-width 7xl prevents "Enlarged" feel */}
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Header Section */}
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8"
-          >
-            <Crown size={12} className="fill-blue-400" /> Premium Access
-          </motion.div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85] mb-8">
-            Elevate your <span className="text-blue-500">Analysis.</span>
+      <div className="max-w-6xl mx-auto px-5 md:px-8 py-10">
+        {/* Header */}
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] font-extrabold">
+            <Crown size={14} />
+            Premium Plans
+          </div>
+
+          <h1 className="mt-4 text-3xl md:text-4xl font-black tracking-tight">
+            Upgrade your CricSphere experience
           </h1>
-          <p className="text-slate-500 text-lg font-medium leading-relaxed">
-            Switch to the Pro Tier for socket-speed telemetry, advanced wagon wheels, and zero advertisement interruption.
+
+          <p className="mt-2 text-[13px] text-slate-500 leading-relaxed">
+            Unlock faster updates, advanced insights and a clean ad-free experience.
           </p>
         </div>
 
-        {/* Pricing Grid */}
-        <div className="flex justify-center mb-12">
-          <div className="bg-white/5 p-1 rounded-2xl border border-white/10 flex items-center">
-            <button 
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${billingCycle === 'monthly' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+        {/* Billing toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="p-1 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0b0f16] flex items-center">
+            <button
+              onClick={() => setBillingCycle("monthly")}
+              className={`px-5 py-2 rounded-xl text-[11px] font-extrabold transition-all ${
+                billingCycle === "monthly"
+                  ? "bg-blue-600 text-white shadow"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+              }`}
             >
               Monthly
             </button>
-            <button 
-              onClick={() => setBillingCycle('yearly')}
-              className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+
+            <button
+              onClick={() => setBillingCycle("yearly")}
+              className={`px-5 py-2 rounded-xl text-[11px] font-extrabold transition-all ${
+                billingCycle === "yearly"
+                  ? "bg-blue-600 text-white shadow"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+              }`}
             >
-              Yearly <span className="text-[8px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded ml-1">-20%</span>
+              Yearly{" "}
+              <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                Save 20%
+              </span>
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch mb-20">
-          <PricingCard title="Arena Fan" price="Rs.0" period="/ forever" onSelect={handlePlanSelect}
+        {/* Pricing cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+          <PricingCard
+            title="Arena Fan"
+            price="Rs.0"
+            period="/ forever"
+            onSelect={handlePlanSelect}
             features={[
-              { text: "Live Scores (Standard Delay)", included: true },
-              { text: "News & Editorial Feed", included: true },
-              { text: "Ad-Supported Hub", included: true },
-              { text: "Socket-Speed Telemetry", included: false },
+              { text: "Live scores (standard)", included: true },
+              { text: "News feed access", included: true },
+              { text: "Series & schedules", included: true },
+              { text: "Advanced insights", included: false },
             ]}
           />
-          <PricingCard title="Analyst Pro" recommended={true} onSelect={handlePlanSelect}
-            price={billingCycle === 'monthly' ? "Rs.49" : "Rs.39"} period="/ month"
+
+          <PricingCard
+            title="Analyst Pro"
+            recommended
+            price={billingCycle === "monthly" ? "Rs.49" : "Rs.39"}
+            period="/ month"
+            onSelect={handlePlanSelect}
             features={[
-              { text: "Socket-Speed Live Scores", included: true },
-              { text: "100% Ad-Free Experience", included: true },
-              { text: "Advanced Wagon Wheels", included: true },
-              { text: "Ball-by-Ball Predictive Logic", included: true },
+              { text: "Faster live updates", included: true },
+              { text: "Ad-free experience", included: true },
+              { text: "Advanced match insights", included: true },
+              { text: "Premium UI badge", included: true },
             ]}
           />
-          <PricingCard title="Fantasy Elite" price={billingCycle === 'monthly' ? "Rs.99" : "Rs.79"} period="/ month" onSelect={handlePlanSelect}
+
+          <PricingCard
+            title="Fantasy Elite"
+            price={billingCycle === "monthly" ? "Rs.99" : "Rs.79"}
+            period="/ month"
+            onSelect={handlePlanSelect}
             features={[
               { text: "Everything in Analyst Pro", included: true },
-              { text: "AI Generated Fantasy 11", included: true },
-              { text: "Priority Support Line", included: true },
-              { text: "Pro Badge in Community Chat", included: true },
+              { text: "AI fantasy suggestions", included: true },
+              { text: "Priority support", included: true },
+              { text: "Early access features", included: true },
             ]}
           />
         </div>
 
-        {/* Feature Grid (Compact Icons) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-white/5 pt-20 text-center">
-            <FeatureItem icon={Zap} title="No Delay" />
-            <FeatureItem icon={Shield} title="Ad-Free" />
-            <FeatureItem icon={BarChart2} title="Visual Stats" />
-            <FeatureItem icon={BrainCircuit} title="AI Engine" />
+        {/* Feature grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-black/10 dark:border-white/10 mt-10 pt-10">
+          <FeatureItem icon={Zap} title="Faster Updates" />
+          <FeatureItem icon={Shield} title="Ad-Free" />
+          <FeatureItem icon={BarChart2} title="Insights" />
+          <FeatureItem icon={BrainCircuit} title="AI Tools" />
         </div>
       </div>
     </div>
   );
-};
-
-const FeatureItem = ({ icon: Icon, title }) => (
-  <div className="flex flex-col items-center">
-    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/5">
-      <Icon size={20} className="text-blue-500" />
-    </div>
-    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{title}</span>
-  </div>
-);
-
-export default PremiumFeatures; // ENSURES EXPORT DEFAULT FIXED
+}

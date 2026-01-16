@@ -241,11 +241,9 @@ function AppContent() {
         <Route
           path="/premium"
           element={
-            <PrivateRoute>
               <AppLayout toggleDarkMode={toggleDarkMode} darkMode={darkMode}>
                 <PremiumFeatures />
               </AppLayout>
-            </PrivateRoute>
           }
         />
 

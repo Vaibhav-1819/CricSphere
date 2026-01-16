@@ -7,11 +7,10 @@ import {
   Loader2,
   Flame,
   BarChart3,
-  Zap,
-  Target,
   Radio,
   Newspaper,
   CalendarDays,
+  Target,
 } from "lucide-react";
 import { getLiveMatches, getNews, getSeries } from "../services/api";
 
@@ -20,23 +19,17 @@ import { getLiveMatches, getNews, getSeries } from "../services/api";
 ========================================================== */
 const Skeleton = ({ className = "" }) => (
   <div
-    className={`animate-pulse bg-slate-800/50 rounded-2xl border border-white/5 ${className}`}
+    className={`animate-pulse bg-black/5 dark:bg-white/10 rounded-2xl border border-black/10 dark:border-white/10 ${className}`}
   />
 );
 
 /* ==========================================================
    DATA NORMALIZERS (Safe + Defensive)
 ========================================================== */
-
-// LIVE MATCHES (RapidAPI Cricbuzz: /matches/v1/live)
 const normalizeLiveMatches = (raw) => {
-  // Some wrappers you might get depending on your service layer
   const typeMatches = raw?.typeMatches || raw?.data?.typeMatches || null;
-
-  // If already array of matches (your custom backend maybe)
   if (Array.isArray(raw)) return raw;
 
-  // Cricbuzz structure
   const matches =
     typeMatches?.flatMap((tm) =>
       tm?.seriesMatches?.flatMap((sm) => sm?.seriesAdWrapper?.matches || [])
@@ -45,23 +38,16 @@ const normalizeLiveMatches = (raw) => {
   return Array.isArray(matches) ? matches : [];
 };
 
-// NEWS (RapidAPI Cricbuzz: /news/v1/index)
 const normalizeNews = (raw) => {
   const list = raw?.storyList || raw?.data?.storyList || [];
   if (!Array.isArray(list)) return [];
-
-  // Filter only story blocks (ignore ads)
   return list.filter((x) => x?.story?.id);
 };
 
-// SERIES (CricAPI cached daily: /series)
 const normalizeSeries = (raw) => {
-  // CricAPI: res.data.data = []
   const list = raw?.data || raw?.data?.data || raw?.series || raw?.seriesMap || raw;
-
   if (Array.isArray(list)) return list;
 
-  // Sometimes seriesMap can be object => convert to array
   if (list && typeof list === "object") {
     return Object.values(list).flat();
   }
@@ -70,16 +56,63 @@ const normalizeSeries = (raw) => {
 };
 
 /* ==========================================================
-   LIVE HUB (Accessible Horizontal Carousel)
+   LIVE MATCH HELPERS
+========================================================== */
+const getMatchStatusRank = (match) => {
+  const info = match?.matchInfo || match;
+  const status = String(info?.status || "").toLowerCase();
+
+  // ongoing first
+  if (
+    status.includes("live") ||
+    status.includes("in progress") ||
+    status.includes("stumps") ||
+    status.includes("innings") ||
+    status.includes("day")
+  )
+    return 0;
+
+  // scheduled/preview next
+  if (status.includes("starts") || status.includes("toss") || status.includes("scheduled"))
+    return 1;
+
+  // completed last (go right)
+  if (
+    status.includes("won") ||
+    status.includes("match ended") ||
+    status.includes("completed") ||
+    status.includes("result")
+  )
+    return 2;
+
+  return 1;
+};
+
+const sortLiveMatchesSmart = (matches = []) => {
+  return [...matches].sort((a, b) => {
+    const ra = getMatchStatusRank(a);
+    const rb = getMatchStatusRank(b);
+    if (ra !== rb) return ra - rb;
+
+    // Secondary sort: newer first if possible
+    const aId = (a?.matchInfo?.matchId || a?.matchId || 0) * 1;
+    const bId = (b?.matchInfo?.matchId || b?.matchId || 0) * 1;
+    return bId - aId;
+  });
+};
+
+/* ==========================================================
+   LIVE HUB (Compact Cricbuzz-like Strip)
 ========================================================== */
 const LiveHub = ({ matches = [] }) => {
   const scrollRef = useRef(null);
   const navigate = useNavigate();
 
-  const canScroll = matches.length > 0;
+  const sorted = useMemo(() => sortLiveMatchesSmart(matches), [matches]);
+  const canScroll = sorted.length > 0;
 
   const scrollBy = (dir) => {
-    const offset = dir === "left" ? -420 : 420;
+    const offset = dir === "left" ? -320 : 320;
     scrollRef.current?.scrollBy({ left: offset, behavior: "smooth" });
   };
 
@@ -91,21 +124,18 @@ const LiveHub = ({ matches = [] }) => {
   };
 
   return (
-    <section
-      aria-label="Live matches"
-      className="relative mb-12"
-    >
-      <div className="flex items-center justify-between mb-6 px-1">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
-            <Zap size={18} className="text-red-500 fill-red-500" />
+    <section aria-label="Live matches" className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 flex items-center justify-center">
+            <Radio size={16} className="text-blue-500" />
           </div>
           <div>
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white">
+            <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
               Live Now
             </h2>
-            <p className="text-[10px] text-slate-500 font-bold">
-              Real-time match telemetry
+            <p className="text-[11px] font-medium text-slate-500">
+              Ongoing matches shown first
             </p>
           </div>
         </div>
@@ -115,28 +145,28 @@ const LiveHub = ({ matches = [] }) => {
             type="button"
             onClick={() => scrollBy("left")}
             disabled={!canScroll}
-            aria-label="Scroll live matches left"
-            className={`p-2 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/60 ${
+            aria-label="Scroll left"
+            className={`p-2 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${
               canScroll
-                ? "bg-slate-900 border-white/5 hover:bg-slate-800"
-                : "bg-slate-900/40 border-white/5 opacity-50 cursor-not-allowed"
+                ? "bg-white dark:bg-[#0b0f16] border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5"
+                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 opacity-50 cursor-not-allowed"
             }`}
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={16} />
           </button>
 
           <button
             type="button"
             onClick={() => scrollBy("right")}
             disabled={!canScroll}
-            aria-label="Scroll live matches right"
-            className={`p-2 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/60 ${
+            aria-label="Scroll right"
+            className={`p-2 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${
               canScroll
-                ? "bg-slate-900 border-white/5 hover:bg-slate-800"
-                : "bg-slate-900/40 border-white/5 opacity-50 cursor-not-allowed"
+                ? "bg-white dark:bg-[#0b0f16] border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5"
+                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 opacity-50 cursor-not-allowed"
             }`}
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>
@@ -144,21 +174,33 @@ const LiveHub = ({ matches = [] }) => {
       <div
         ref={scrollRef}
         role="list"
-        className="flex gap-4 overflow-x-auto no-scrollbar snap-x scroll-smooth pb-4 px-1"
+        className="flex gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-2"
       >
-        {matches.length > 0 ? (
-          matches.map((m, idx) => {
+        {sorted.length > 0 ? (
+          sorted.map((m, idx) => {
             const info = m?.matchInfo || m;
             const matchId = info?.matchId || m?.matchId || idx;
 
-            const team1 = info?.team1?.shortName || info?.team1?.teamName || "Team 1";
-            const team2 = info?.team2?.shortName || info?.team2?.teamName || "Team 2";
+            const team1 =
+              info?.team1?.shortName || info?.team1?.teamName || "Team 1";
+            const team2 =
+              info?.team2?.shortName || info?.team2?.teamName || "Team 2";
 
-            const t1Runs = m?.matchScore?.team1Score?.inngs1?.runs ?? 0;
-            const t1Wkts = m?.matchScore?.team1Score?.inngs1?.wickets ?? 0;
+            const t1Runs = m?.matchScore?.team1Score?.inngs1?.runs ?? "-";
+            const t1Wkts = m?.matchScore?.team1Score?.inngs1?.wickets ?? "-";
 
-            const t2Runs = m?.matchScore?.team2Score?.inngs1?.runs ?? 0;
-            const t2Wkts = m?.matchScore?.team2Score?.inngs1?.wickets ?? 0;
+            const t2Runs = m?.matchScore?.team2Score?.inngs1?.runs ?? "-";
+            const t2Wkts = m?.matchScore?.team2Score?.inngs1?.wickets ?? "-";
+
+            const status = info?.status || "Match update unavailable";
+            const rank = getMatchStatusRank(m);
+
+            const pill =
+              rank === 0
+                ? "LIVE"
+                : rank === 2
+                ? "RESULT"
+                : "UPCOMING";
 
             return (
               <div
@@ -167,69 +209,57 @@ const LiveHub = ({ matches = [] }) => {
                 tabIndex={0}
                 onClick={() => navigate(`/match/${matchId}`)}
                 onKeyDown={(e) => onCardKeyDown(e, matchId)}
-                className="snap-start min-w-[320px] bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-white/10 rounded-2xl p-5 cursor-pointer hover:scale-[1.02] hover:border-blue-500/50 transition-all duration-300 shadow-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/60"
-                aria-label={`Live match ${team1} vs ${team2}`}
+                className="min-w-[260px] max-w-[260px] bg-white dark:bg-[#0b0f16] border border-black/10 dark:border-white/10 rounded-2xl p-4 cursor-pointer hover:border-blue-500/50 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                aria-label={`Match ${team1} vs ${team2}`}
               >
-                <div className="flex justify-between items-start mb-4">
-                  <span className="px-2 py-1 bg-blue-500/10 text-blue-400 text-[9px] font-black rounded uppercase border border-blue-500/20">
-                    {info?.matchFormat || "LIVE"}
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 truncate">
+                    {info?.seriesName || "Series"}
                   </span>
 
-                  <span className="text-[10px] font-bold text-slate-400 text-right line-clamp-1">
-                    {info?.seriesName || "International Fixture"}
+                  <span
+                    className={`text-[9px] font-extrabold px-2 py-1 rounded-full border uppercase tracking-wide ${
+                      pill === "LIVE"
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        : pill === "RESULT"
+                        ? "bg-slate-500/10 text-slate-600 border-slate-500/20"
+                        : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                    }`}
+                  >
+                    {pill}
                   </span>
                 </div>
 
-                <div className="space-y-4 mb-5">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-slate-800 rounded-full border border-white/5 flex items-center justify-center font-black text-xs">
-                        {String(team1).slice(0, 1)}
-                      </div>
-                      <span className="text-sm font-black text-white">{team1}</span>
-                    </div>
-
-                    <span className="text-sm font-mono font-black text-white">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                      {team1}
+                    </span>
+                    <span className="text-sm font-mono font-extrabold text-slate-900 dark:text-white">
                       {t1Runs}/{t1Wkts}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-slate-800 rounded-full border border-white/5 flex items-center justify-center font-black text-xs">
-                        {String(team2).slice(0, 1)}
-                      </div>
-                      <span className="text-sm font-black text-white">{team2}</span>
-                    </div>
-
-                    <span className="text-sm font-mono font-black text-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                      {team2}
+                    </span>
+                    <span className="text-sm font-mono font-extrabold text-slate-900 dark:text-white">
                       {t2Runs}/{t2Wkts}
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/5 flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-bold text-emerald-400 truncate">
-                    {info?.status || "Live match in progress"}
-                  </p>
-
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
-                      <Radio size={12} /> Live
-                    </span>
-                  </div>
-                </div>
+                <p className="mt-3 text-[11px] font-medium text-slate-500 dark:text-slate-400 line-clamp-1">
+                  {status}
+                </p>
               </div>
             );
           })
         ) : (
-          <div className="w-full h-44 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-white/[0.02] px-4 text-center">
-            <Radio className="text-slate-700 mb-2" size={32} />
-            <p className="text-xs font-bold text-slate-400">
+          <div className="w-full h-28 flex items-center justify-center border border-dashed border-black/10 dark:border-white/10 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02]">
+            <p className="text-sm font-semibold text-slate-500">
               No live matches right now
-            </p>
-            <p className="text-[10px] text-slate-600 mt-1">
-              Check back soon — the feed updates automatically.
             </p>
           </div>
         )}
@@ -239,7 +269,7 @@ const LiveHub = ({ matches = [] }) => {
 };
 
 /* ==========================================================
-   HOME PAGE (Best Accessible Layout)
+   HOME PAGE (Cricbuzz-style)
 ========================================================== */
 export default function Home() {
   const [data, setData] = useState({ live: [], news: [], series: [] });
@@ -269,7 +299,6 @@ export default function Home() {
   useEffect(() => {
     loadAll();
 
-    // Live refresh (backend TTL protects quota)
     const interval = setInterval(async () => {
       try {
         const r = await getLiveMatches();
@@ -279,9 +308,7 @@ export default function Home() {
           ...prev,
           live: live.length ? live : prev.live,
         }));
-      } catch (e) {
-        // silently ignore refresh failures
-      }
+      } catch (e) {}
     }, 60 * 1000);
 
     return () => clearInterval(interval);
@@ -292,89 +319,80 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#080a0f]">
-        <div className="relative">
-          <Loader2 className="animate-spin text-blue-500 mb-4" size={48} />
-          <div className="absolute inset-0 blur-xl bg-blue-500/20" />
-        </div>
-        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">
-          Arena Syncing
+      <div className="h-screen flex flex-col items-center justify-center bg-white dark:bg-[#05070c]">
+        <Loader2 className="animate-spin text-blue-500 mb-3" size={44} />
+        <span className="text-[11px] font-bold text-slate-500">
+          Syncing CricSphere...
         </span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#080a0f] text-slate-200 selection:bg-blue-500/30">
-      {/* BACKGROUND DECOR */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-20">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full blur-[160px]" />
-        <div className="absolute top-1/2 -right-24 w-96 h-96 bg-indigo-600 rounded-full blur-[160px]" />
-      </div>
-
-      <div className="relative max-w-[1440px] mx-auto px-6 py-10">
-        {/* LIVE MODULE */}
+    <div className="min-h-screen bg-white dark:bg-[#05070c] text-slate-900 dark:text-slate-200">
+      <div className="max-w-[1440px] mx-auto px-5 md:px-8 py-8">
+        {/* LIVE */}
         <LiveHub matches={data.live} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* LEFT SIDEBAR: SERIES */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* LEFT: SERIES */}
           <aside className="lg:col-span-3">
-            <div className="lg:sticky lg:top-24 space-y-8">
-              <div className="bg-[#111827]/80 backdrop-blur-xl rounded-3xl border border-white/5 overflow-hidden shadow-2xl">
-                <div className="p-5 border-b border-white/5 bg-gradient-to-r from-blue-600/10 to-transparent flex items-center gap-3">
+            <div className="lg:sticky lg:top-24 space-y-6">
+              <div className="bg-white dark:bg-[#0b0f16] rounded-3xl border border-black/10 dark:border-white/10 overflow-hidden">
+                <div className="p-5 border-b border-black/10 dark:border-white/10 flex items-center gap-3">
                   <Trophy size={18} className="text-amber-500" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-white">
+                  <h3 className="text-[12px] font-extrabold tracking-wide">
                     Featured Series
                   </h3>
                 </div>
 
-                <div className="divide-y divide-white/5">
+                <div className="divide-y divide-black/10 dark:divide-white/10">
                   {topSeries.length > 0 ? (
                     topSeries.map((s, idx) => (
                       <Link
                         to={`/series/${s.id || s?.seriesId || idx}`}
                         key={s.id || idx}
-                        className="flex items-center justify-between p-5 hover:bg-white/[0.03] transition-all group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                        className="flex items-center justify-between p-4 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-all"
                       >
-                        <span className="text-xs font-black truncate pr-4 text-slate-400 group-hover:text-blue-400">
+                        <span className="text-[12px] font-semibold text-slate-700 dark:text-slate-300 truncate pr-3">
                           {s.name || "Series"}
                         </span>
-                        <ChevronRight
-                          size={14}
-                          className="text-slate-700 group-hover:text-blue-400 transform group-hover:translate-x-1 transition-transform"
-                        />
+                        <ChevronRight size={16} className="text-slate-400" />
                       </Link>
                     ))
                   ) : (
-                    <div className="p-5">
-                      <p className="text-[11px] text-slate-500 font-bold">
-                        No series available right now.
-                      </p>
+                    <div className="p-4 text-[12px] text-slate-500">
+                      No series available.
                     </div>
                   )}
                 </div>
 
                 <Link
                   to="/schedules"
-                  className="block p-4 border-t border-white/5 text-[10px] font-black uppercase text-center text-slate-500 hover:text-blue-500 transition-colors tracking-[0.2em]"
+                  className="block p-4 border-t border-black/10 dark:border-white/10 text-[11px] font-extrabold uppercase text-center text-slate-500 hover:text-blue-500"
                 >
                   View Full Schedules
                 </Link>
               </div>
 
-              {/* CTA */}
-              <div className="bg-gradient-to-br from-[#1e293b] to-slate-900 rounded-3xl p-6 border border-white/5 shadow-2xl relative overflow-hidden group">
-                <Target className="absolute -right-4 -bottom-4 text-white/5 scale-[3] group-hover:rotate-12 transition-transform duration-700" />
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-2">
-                  System Intel
-                </h4>
-                <p className="text-xs font-bold leading-relaxed text-slate-300">
-                  Unlock advanced analytics like player form, match predictions,
-                  and momentum tracking.
-                </p>
+              {/* PREMIUM CTA */}
+              <div className="bg-white dark:bg-[#0b0f16] rounded-3xl border border-black/10 dark:border-white/10 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <Target size={18} className="text-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-extrabold">
+                      Premium Analytics
+                    </h4>
+                    <p className="text-[12px] text-slate-500 mt-1 leading-relaxed">
+                      Player form, match momentum, smart insights and predictions.
+                    </p>
+                  </div>
+                </div>
 
-                <Link to="/stats">
-                  <button className="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase transition-all shadow-lg shadow-blue-600/20 focus:outline-none focus:ring-2 focus:ring-blue-500/60">
+                <Link to="/premium">
+                  <button className="mt-4 w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-extrabold uppercase tracking-wide transition-all">
                     Analyze Now
                   </button>
                 </Link>
@@ -382,15 +400,20 @@ export default function Home() {
             </div>
           </aside>
 
-          {/* MAIN: NEWS FEED */}
-          <main className="lg:col-span-6 space-y-8" aria-label="News feed">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="h-px flex-1 bg-white/5" />
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
-                <Flame size={16} className="text-orange-500" />
-                Leading Stories
+          {/* CENTER: NEWS */}
+          <main className="lg:col-span-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-extrabold flex items-center gap-2">
+                <Flame size={18} className="text-orange-500" />
+                Latest News
               </h3>
-              <div className="h-px flex-1 bg-white/5" />
+
+              <Link
+                to="/news"
+                className="text-[12px] font-semibold text-blue-600 hover:text-blue-500"
+              >
+                View all
+              </Link>
             </div>
 
             {topNews.length > 0 ? (
@@ -402,37 +425,36 @@ export default function Home() {
                   <Link
                     to={id ? `/news/${id}` : "/news"}
                     key={id || Math.random()}
-                    className="group block bg-[#111827]/40 backdrop-blur-sm rounded-3xl border border-white/5 hover:border-blue-500/40 hover:bg-white/[0.02] transition-all duration-500 overflow-hidden shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                    className="block bg-white dark:bg-[#0b0f16] rounded-3xl border border-black/10 dark:border-white/10 hover:border-blue-500/40 transition-all overflow-hidden"
                   >
-                    <div className="flex flex-col md:flex-row gap-6 p-6">
-                      <div className="w-full md:w-48 h-32 flex-shrink-0 overflow-hidden rounded-2xl border border-white/5 shadow-inner bg-black/20">
+                    <div className="flex gap-4 p-5">
+                      <div className="w-24 h-20 rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex-shrink-0">
                         <img
                           src={story?.imageUrl || "/cricsphere-logo.png"}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          className="w-full h-full object-cover"
                           alt={story?.title || "News story"}
                           loading="lazy"
                         />
                       </div>
 
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <span className="text-[9px] font-black px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20 uppercase">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-extrabold px-2 py-1 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20">
                             {story?.source || "CricSphere"}
                           </span>
 
-                          <span className="text-[10px] text-slate-600 font-bold uppercase tracking-widest flex items-center gap-2">
-                            <Newspaper size={12} className="opacity-70" />
-                            Live Updates
+                          <span className="text-[10px] font-semibold text-slate-500 flex items-center gap-1">
+                            <Newspaper size={12} />
+                            Updates
                           </span>
                         </div>
 
-                        <h4 className="text-lg font-black leading-tight text-white group-hover:text-blue-400 transition-colors">
+                        <h4 className="text-[15px] font-extrabold leading-snug">
                           {story?.title || "Latest cricket update"}
                         </h4>
 
-                        <p className="text-[11px] font-medium text-slate-500 line-clamp-2 leading-relaxed italic">
-                          {story?.intro ||
-                            "Real-time coverage from the CricSphere Intelligence Arena..."}
+                        <p className="text-[12px] text-slate-500 mt-1 line-clamp-2">
+                          {story?.intro || "Tap to read full story..."}
                         </p>
                       </div>
                     </div>
@@ -441,77 +463,50 @@ export default function Home() {
               })
             ) : (
               <>
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-28 w-full" />
               </>
             )}
-
-            <Link
-              to="/news"
-              className="block text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-500 transition-colors pt-4"
-            >
-              View More Stories
-            </Link>
           </main>
 
-          {/* RIGHT SIDEBAR: RANKINGS QUICK ACCESS */}
+          {/* RIGHT: RANKINGS */}
           <aside className="lg:col-span-3">
-            <div className="bg-[#111827]/80 backdrop-blur-xl rounded-3xl border border-white/5 p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
+            <div className="bg-white dark:bg-[#0b0f16] rounded-3xl border border-black/10 dark:border-white/10 p-5">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
                   <BarChart3 size={18} className="text-indigo-500" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-white">
-                    Global Rankings
-                  </h3>
+                  <h3 className="text-sm font-extrabold">Rankings</h3>
                 </div>
 
-                <span className="text-[9px] font-black uppercase text-slate-500 bg-white/5 border border-white/10 px-2 py-1 rounded-full flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-500 bg-black/5 dark:bg-white/5 px-2 py-1 rounded-full flex items-center gap-2">
                   <CalendarDays size={12} />
                   Weekly
                 </span>
               </div>
 
-              {/* This is still placeholder data, but now it’s clearly a shortcut */}
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {["India", "Australia", "England", "South Africa"].map((team, i) => (
-                  <div
-                    key={team}
-                    className="group"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Ranking preview ${team}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-4">
-                        <span className="text-[11px] font-black text-slate-700">
-                          {String(i + 1).padStart(2, "0")}
-                        </span>
-                        <span className="text-xs font-black text-slate-300 group-hover:text-white transition-colors">
-                          {team}
-                        </span>
-                      </div>
-
-                      <span className="text-[11px] font-black text-blue-500">
-                        12{9 - i} pts
+                  <div key={team} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[12px] font-extrabold text-slate-400">
+                        {i + 1}
                       </span>
+                      <span className="text-[13px] font-semibold">{team}</span>
                     </div>
 
-                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-1000"
-                        style={{ width: `${95 - i * 10}%` }}
-                      />
-                    </div>
+                    <span className="text-[12px] font-extrabold text-blue-600">
+                      12{9 - i} pts
+                    </span>
                   </div>
                 ))}
               </div>
 
               <Link
                 to="/stats"
-                className="block mt-10 pt-4 border-t border-white/5 text-[9px] font-black uppercase text-center text-slate-500 hover:text-blue-500 transition-colors tracking-[0.2em] focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                className="block mt-6 pt-4 border-t border-black/10 dark:border-white/10 text-[11px] font-extrabold uppercase text-center text-slate-500 hover:text-blue-500"
               >
-                View Team Standings
+                View Full Rankings
               </Link>
             </div>
           </aside>

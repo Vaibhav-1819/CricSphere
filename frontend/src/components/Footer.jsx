@@ -119,27 +119,29 @@ const Footer = () => {
             {
               title: "Live Cricket",
               links: [
+                { name: "Home", to: "/home" },
                 { name: "Live Scores", to: "/live-scores" },
-                { name: "Schedules", to: "/schedules" },
-                { name: "Series", to: "/series" },
+                { name: "Series Schedules", to: "/schedules" },
               ],
             },
             {
               title: "Stats & Analysis",
               links: [
                 { name: "Teams", to: "/teams" },
-                { name: "Player Stats", to: "/stats" },
-                { name: "Rankings", to: "/rankings" },
+                { name: "Rankings", to: "/stats" },
+                { name: "Premium", to: "/premium" },
               ],
             },
             {
               title: "Support",
               links: [
                 { name: "About", to: "/about" },
-                { name: "Privacy", to: "/privacy" },
+                { name: "Privacy Policy", to: "/privacy" },
+                { name: "Terms of Service", to: "/terms" },
                 { name: "Contact", to: "/contact" },
               ],
             },
+
           ].map((col) => (
             <div key={col.title}>
               <h4 className="text-xs font-semibold text-slate-900 dark:text-white">
