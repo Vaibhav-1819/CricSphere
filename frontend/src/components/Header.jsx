@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
@@ -17,9 +17,12 @@ import Logo from "../assets/cricsphere-logo.png";
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const { user, logout } = useAuth();
   const location = useLocation();
+
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 14);
@@ -27,21 +30,52 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close mobile menu on route change
   useEffect(() => {
     setIsOpen(false);
+    setProfileOpen(false);
   }, [location.pathname]);
 
-  const navLinks = [
-    { name: "Live Hub", path: "/live-scores", icon: Radio },
-    { name: "Schedules", path: "/schedules" },
-    { name: "Teams", path: "/teams" },
-    { name: "Stats", path: "/stats" },
-    { name: "News", path: "/news" },
-  ];
+  // Close dropdown on outside click
+  useEffect(() => {
+    const onClick = (e) => {
+      if (!dropdownRef.current) return;
+      if (!dropdownRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
 
-  const isActive = (path) => location.pathname === path;
+    const onEsc = (e) => {
+      if (e.key === "Escape") setProfileOpen(false);
+    };
 
-  const displayName = user?.username || "User";
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onEsc);
+
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
+
+  const navLinks = useMemo(
+    () => [
+      { name: "Live Hub", path: "/live-scores", icon: Radio },
+      { name: "Schedules", path: "/schedules" },
+      { name: "Teams", path: "/teams" },
+      { name: "Rankings", path: "/stats" },
+      { name: "News", path: "/news" },
+    ],
+    []
+  );
+
+  // ✅ Better active matching (supports /match/:id etc.)
+  const isActive = (path) => {
+    if (location.pathname === path) return true;
+    return location.pathname.startsWith(path + "/");
+  };
+
+  const displayName = user?.username || user?.name || "User";
   const avatar = displayName?.charAt(0)?.toUpperCase() || "U";
 
   return (
@@ -62,7 +96,8 @@ const Header = () => {
 
             <div className="leading-tight">
               <p className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
-                Cric<span className="text-blue-600 dark:text-blue-400">Sphere</span>
+                Cric
+                <span className="text-blue-600 dark:text-blue-400">Sphere</span>
               </p>
               <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
                 Cricket Intelligence
@@ -80,7 +115,7 @@ const Header = () => {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
                     active
                       ? "bg-blue-600 text-white shadow-sm"
                       : "text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5"
@@ -101,8 +136,12 @@ const Header = () => {
 
             {/* Auth Area */}
             {user ? (
-              <div className="relative group">
-                <button className="flex items-center gap-3 px-3 py-2 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-black/5 dark:hover:bg-white/10 transition-all shadow-sm">
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setProfileOpen((p) => !p)}
+                  className="flex items-center gap-3 px-3 py-2 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-black/5 dark:hover:bg-white/10 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  aria-label="Open account menu"
+                >
                   <div className="h-9 w-9 rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm border border-black/10 dark:border-white/10">
                     {avatar}
                   </div>
@@ -118,52 +157,63 @@ const Header = () => {
 
                   <ChevronDown
                     size={16}
-                    className="text-slate-500 dark:text-slate-400 group-hover:rotate-180 transition-transform"
+                    className={`text-slate-500 dark:text-slate-400 transition-transform ${
+                      profileOpen ? "rotate-180" : ""
+                    }`}
                   />
                 </button>
 
-                {/* Dropdown */}
-                <div className="absolute right-0 mt-3 w-56 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#05070c] shadow-xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto transition-all origin-top-right overflow-hidden">
-                  <div className="px-4 py-3 border-b border-black/10 dark:border-white/10">
-                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                      {displayName}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Signed in
-                    </p>
-                  </div>
-
-                  <div className="p-2">
-                    <Link
-                      to="/profile"
-                      className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+                <AnimatePresence>
+                  {profileOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-3 w-56 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#05070c] shadow-xl overflow-hidden origin-top-right"
                     >
-                      <Settings size={16} />
-                      Account Settings
-                    </Link>
+                      <div className="px-4 py-3 border-b border-black/10 dark:border-white/10">
+                        <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                          {displayName}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Signed in
+                        </p>
+                      </div>
 
-                    <Link
-                      to="/stats"
-                      className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
-                    >
-                      <Activity size={16} />
-                      Personal Stats
-                    </Link>
+                      <div className="p-2">
+                        <Link
+                          to="/profile"
+                          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+                        >
+                          <Settings size={16} />
+                          Account Settings
+                        </Link>
 
-                    <button
-                      onClick={logout}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-500/10 transition-all"
-                    >
-                      <LogOut size={16} />
-                      Logout
-                    </button>
-                  </div>
-                </div>
+                        <Link
+                          to="/stats"
+                          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+                        >
+                          <Activity size={16} />
+                          Rankings
+                        </Link>
+
+                        <button
+                          onClick={logout}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-500/10 transition-all"
+                        >
+                          <LogOut size={16} />
+                          Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
               <Link
                 to="/login"
-                className="px-6 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-semibold hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all shadow-sm"
+                className="px-6 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-semibold hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
                 Login
               </Link>
@@ -173,7 +223,8 @@ const Header = () => {
           {/* Mobile Toggle */}
           <button
             onClick={() => setIsOpen((p) => !p)}
-            className="lg:hidden p-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 text-slate-700 dark:text-slate-200 shadow-sm"
+            className="lg:hidden p-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 text-slate-700 dark:text-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            aria-label="Toggle navigation menu"
           >
             {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -198,7 +249,7 @@ const Header = () => {
                   <Link
                     key={link.name}
                     to={link.path}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
                       active
                         ? "bg-blue-600 text-white"
                         : "bg-black/5 dark:bg-white/5 text-slate-700 dark:text-slate-200"
