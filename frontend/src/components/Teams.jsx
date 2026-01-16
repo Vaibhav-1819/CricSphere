@@ -5,8 +5,7 @@ import {
   Search, BarChart2, X, Trophy, Check, 
   ArrowUpDown, Shield, Users, ChevronRight, Activity
 } from "lucide-react";
-import axios from "../api/axios";
-
+import axios from "../services/api";
 export default function Teams() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);

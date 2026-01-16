@@ -5,8 +5,7 @@ import {
   Trophy, Users, ChevronLeft, Activity, 
   Shield, Zap, TrendingUp, Search
 } from "lucide-react";
-import axios from "../api/axios";
-
+import axios from "../services/api";
 export default function TeamDetails() {
   const { teamId } = useParams();
   const navigate = useNavigate();

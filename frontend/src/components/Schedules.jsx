@@ -5,8 +5,7 @@ import {
   Search, Calendar, ChevronRight, Info, Filter,
   ArrowUpDown, Hash, Layers
 } from "lucide-react";
-import { getSeries } from "../api/cricketApi";
-
+import { getSeries } from "../services/api";
 export default function Schedules() {
   const [series, setSeries] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -5,8 +5,7 @@ import {
   Clock, Activity, Hash, Trophy
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSeriesDetail } from "../api/cricketApi";
-
+import { getSeriesDetail } from "../services/api";
 export default function SeriesPage() {
   const { seriesId } = useParams();
   const navigate = useNavigate();

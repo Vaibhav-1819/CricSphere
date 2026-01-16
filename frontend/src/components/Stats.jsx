@@ -3,8 +3,7 @@ import {
   Trophy, Globe, Star, Activity, BarChart3, ChevronUp, Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "../api/axios";
-
+import axios from "../services/api";
 export default function Stats() {
   const [format, setFormat] = useState("T20");
   const [data, setData] = useState(null);
