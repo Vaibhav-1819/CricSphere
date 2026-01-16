@@ -14,12 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Entity
-@Table(
-    name = "users",
-    indexes = {
-        @Index(name = "idx_users_email", columnList = "email")
-    }
-)
+@Table(name = "users", indexes = {@Index(name = "idx_users_email", columnList = "email")})
 @Data
 @Builder
 @NoArgsConstructor
@@ -49,10 +44,14 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        String formattedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+        // Centralized role prefixing logic
+        String formattedRole = role.toUpperCase().startsWith("ROLE_") ? 
+                               role.toUpperCase() : "ROLE_" + role.toUpperCase();
         return Collections.singletonList(new SimpleGrantedAuthority(formattedRole));
     }
 
+    @Override public String getUsername() { return this.username; }
+    @Override public String getPassword() { return this.password; }
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }

@@ -2,6 +2,26 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const FeaturesSection = () => {
+  // Animation Variants for the Stagger Effect
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15, // Delay between each card's entry
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" }
+    }
+  };
+
   const features = [
     { 
       title: "Live Scores", 
@@ -64,14 +84,19 @@ const FeaturesSection = () => {
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-20">
           <motion.span 
-             initial={{ opacity: 0, scale: 0.9 }}
-             whileInView={{ opacity: 1, scale: 1 }}
-             className="inline-block px-4 py-1.5 mb-6 text-[10px] font-black tracking-[0.3em] text-blue-400 uppercase bg-blue-400/10 rounded-full border border-blue-400/20"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            className="inline-block px-4 py-1.5 mb-6 text-[10px] font-black tracking-[0.3em] text-blue-400 uppercase bg-blue-400/10 rounded-full border border-blue-400/20"
           >
             The Arena Advantage
           </motion.span>
           
-          <motion.h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-4xl md:text-6xl font-black text-white tracking-tighter"
+          >
             Everything you need <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
               to own the game
@@ -79,21 +104,22 @@ const FeaturesSection = () => {
           </motion.h2>
         </div>
 
+        {/* Staggered Container */}
         <motion.div 
+          variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
         >
           {features.map((feature) => (
             <motion.div
               key={feature.title}
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0 }
-              }}
+              variants={cardVariants}
+              whileHover={{ y: -10 }}
               className="group relative p-10 bg-white/5 border border-white/5 rounded-[2.5rem] hover:bg-white/[0.07] transition-all duration-500"
             >
+              {/* Icon Container */}
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${feature.iconBg} ${feature.iconColor} group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(0,0,0,0.3)] transition-all duration-500`}>
                 {feature.icon}
               </div>
@@ -105,6 +131,7 @@ const FeaturesSection = () => {
                 {feature.description}
               </p>
 
+              {/* Identity Line (Animated on Hover) */}
               <div className={`absolute bottom-6 left-10 w-8 h-1 rounded-full ${feature.lineColor} opacity-20 group-hover:w-20 group-hover:opacity-100 transition-all duration-500`}></div>
             </motion.div>
           ))}

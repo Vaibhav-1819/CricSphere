@@ -26,6 +26,6 @@ public class RegisterDto {
     @Email(message = "Email should be valid")
     private String email;
 
-    // Added to match your AuthController and User entity
+    @Size(max = 50, message = "Favorite team name is too long")
     private String favoriteTeam;
 }

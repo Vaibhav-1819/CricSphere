@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,9 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
         try {
@@ -39,30 +40,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (StringUtils.hasText(token) && jwtUtils.validateToken(token)) {
                 String username = jwtUtils.getUsernameFromToken(token);
 
-                // Only set auth if not already authenticated
+                // Only authenticate if the SecurityContext is currently empty
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                    
+                    // This calls CustomUserDetailsService which now returns our User entity
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                    UsernamePasswordAuthenticationToken auth =
+                    // We use userDetails.getAuthorities() which now contains the 
+                    // centralized "ROLE_" logic from the User entity itself
+                    UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
                                     userDetails.getAuthorities()
                             );
 
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    
+                    // Establish the security context for the duration of this request
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    
+                    log.debug("Authenticated user: {}, setting security context", username);
                 }
             }
 
         } catch (Exception e) {
-            log.warn("Invalid JWT: {}", e.getMessage());
+            log.error("Could not set user authentication in security context: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * Extracts the Bearer token from the Authorization header.
+     */
     private String extractToken(HttpServletRequest request) {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {

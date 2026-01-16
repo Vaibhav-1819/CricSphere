@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, MapPin, Activity, ShieldAlert, Clock, Trophy
 } from "lucide-react";
-import api from "../api/api";
+import api from "../services/api";
 
 /* ===================== */
 

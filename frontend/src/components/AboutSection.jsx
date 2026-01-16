@@ -2,18 +2,25 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const AboutSection = () => {
-  // Logic-driven animation variants to match FeaturesSection stagger
+  // Enhanced staggered animation for a professional reveal
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 }
+      transition: { 
+        staggerChildren: 0.15,
+        delayChildren: 0.3
+      }
     }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+    hidden: { opacity: 0, y: 30 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } 
+    },
   };
 
   const aboutCards = [
@@ -56,24 +63,24 @@ const AboutSection = () => {
   ];
 
   return (
-    // Reduced vertical padding (pt-20 pb-10) to eliminate excessive gaps
-    <section id="about" className="relative pt-20 pb-10 bg-[#0b1220] overflow-hidden">
+    <section id="about" className="relative pt-24 pb-16 bg-[#080a0f] overflow-hidden">
       
-      {/* Background Decor synced with FeaturesSection */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-600/5 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-emerald-600/5 rounded-full blur-[120px]"></div>
+      {/* Dynamic Background decor */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute top-1/2 -right-24 w-80 h-80 bg-emerald-600/10 rounded-full blur-[100px]" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
         
-        {/* --- Metrics Row (Reduced Margin Bottom) --- */}
+        {/* --- Key Metrics Display --- */}
         <motion.div 
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-12 text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center mb-24"
         >
           <StatBox value="50+" label="Global Leagues" />
           <StatBox value="24/7" label="Live Telemetry" isLive />
@@ -81,53 +88,58 @@ const AboutSection = () => {
           <StatBox value="10k+" label="Pro Analysts" />
         </motion.div>
 
-        {/* --- Aligned Header (Tightened Spacing) --- */}
-        <div className="text-center mb-12"> 
+        {/* --- Section Header --- */}
+        <div className="text-center mb-20"> 
           <motion.span 
              initial={{ opacity: 0, scale: 0.9 }}
              whileInView={{ opacity: 1, scale: 1 }}
-             className="inline-block px-4 py-1.5 mb-4 text-[10px] font-black tracking-[0.3em] text-blue-400 uppercase bg-blue-400/10 rounded-full border border-blue-400/20"
+             viewport={{ once: true }}
+             className="inline-block px-4 py-1.5 mb-6 text-[10px] font-black tracking-[0.4em] text-blue-500 uppercase bg-blue-500/10 rounded-full border border-blue-500/20"
           >
             THE ARENA ADVANTAGE
           </motion.span>
           
-          <motion.h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.9]"
+          >
             Everything you need <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400">
               to own the game
             </span>
           </motion.h2>
         </div>
 
-        {/* Aligned Card Grid */}
+        {/* --- Features Grid --- */}
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 md:grid-cols-3 gap-8"
         >
           {aboutCards.map((card) => (
             <motion.div
               key={card.title}
               variants={itemVariants}
-              whileHover={{ y: -5 }}
-              className="group relative p-10 bg-white/5 border border-white/5 rounded-[2.5rem] hover:bg-white/[0.07] transition-all duration-500"
+              whileHover={{ y: -10 }}
+              className="group relative p-12 bg-white/5 border border-white/5 rounded-[3rem] hover:bg-white/[0.08] transition-all duration-500"
             >
-              {/* Icon Container with Purge-Safe Classes */}
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${card.iconBg} ${card.iconColor} group-hover:scale-110 transition-transform duration-500`}>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-10 ${card.iconBg} ${card.iconColor} group-hover:scale-110 group-hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.5)] transition-all duration-500`}>
                 {card.icon}
               </div>
 
-              <h3 className="text-xl font-black text-white mb-4 uppercase tracking-tight">
+              <h3 className="text-2xl font-black text-white mb-4 uppercase tracking-tight italic">
                 {card.title}
               </h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">
+              <p className="text-slate-400 text-sm leading-relaxed font-medium">
                 {card.desc}
               </p>
 
-              {/* Identity Line */}
-              <div className={`absolute bottom-6 left-10 w-8 h-1 rounded-full ${card.lineColor} opacity-20 group-hover:w-20 group-hover:opacity-100 transition-all duration-500`}></div>
+              {/* Animated Accent Line */}
+              <div className={`absolute bottom-8 left-12 h-1 rounded-full ${card.lineColor} w-8 opacity-20 group-hover:w-24 group-hover:opacity-100 transition-all duration-500`}></div>
             </motion.div>
           ))}
         </motion.div>
@@ -137,12 +149,21 @@ const AboutSection = () => {
 };
 
 const StatBox = ({ value, label, isLive }) => (
-  <div className="group">
-    <div className="flex items-center justify-center gap-1.5 mb-2">
-      <span className="text-3xl font-black text-white tracking-tighter group-hover:text-blue-400 transition-colors">{value}</span>
-      {isLive && <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_#ef4444]" />}
+  <div className="group relative">
+    <div className="flex items-center justify-center gap-2 mb-3">
+      <span className="text-4xl font-black text-white tracking-tighter group-hover:text-blue-500 transition-colors duration-300 tabular-nums">
+        {value}
+      </span>
+      {isLive && (
+        <div className="relative flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_15px_#ef4444]"></span>
+        </div>
+      )}
     </div>
-    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">{label}</span>
+    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 group-hover:text-slate-300 transition-colors">
+      {label}
+    </span>
   </div>
 );
 

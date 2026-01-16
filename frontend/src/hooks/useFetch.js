@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
+import { api } from '../context/AuthContext'; // Using the axios instance we created
 
-// Set a cache duration in milliseconds (e.g., 5 minutes)
-const CACHE_DURATION = 5 * 60 * 1000;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 Minutes
 
 const useFetch = (url) => {
   const [data, setData] = useState(null);
@@ -9,46 +9,42 @@ const useFetch = (url) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true; // Prevents memory leaks if component unmounts
+
     const fetchData = async () => {
-      // 1. Check for cached data
       const cachedData = localStorage.getItem(url);
       const cachedTimestamp = localStorage.getItem(`${url}_timestamp`);
 
+      // 1. Logic check: Use cache if it's fresh
       if (cachedData && cachedTimestamp && (Date.now() - cachedTimestamp) < CACHE_DURATION) {
-        console.log("Loading from cache:", url);
         setData(JSON.parse(cachedData));
         setLoading(false);
         return;
       }
 
-      // 2. If no valid cache, fetch from API
-      console.log("Fetching from API:", url);
       setLoading(true);
-      setError(null);
-
       try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // 2. Use our 'api' axios instance (handles JWT headers automatically)
+        const response = await api.get(url);
+        
+        if (isMounted) {
+          // 3. Cache the successful response
+          localStorage.setItem(url, JSON.stringify(response.data));
+          localStorage.setItem(`${url}_timestamp`, Date.now());
+          
+          setData(response.data);
+          setError(null);
         }
-        const result = await response.json();
-
-        // 3. Store new data in cache
-        localStorage.setItem(url, JSON.stringify(result));
-        localStorage.setItem(`${url}_timestamp`, Date.now());
-
-        setData(result);
-      } catch (e) {
-        console.error("Fetch error:", e);
-        setError(e);
+      } catch (err) {
+        if (isMounted) setError(err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
-    if (url) {
-      fetchData();
-    }
+    if (url) fetchData();
+
+    return () => { isMounted = false; };
   }, [url]);
 
   return { data, loading, error };

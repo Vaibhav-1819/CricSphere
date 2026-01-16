@@ -2,7 +2,12 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 const AuthContext = createContext(null);
-const API = import.meta.env.VITE_API_BASE_URL;
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+// Create a dedicated instance for our backend
+export const api = axios.create({
+  baseURL: API_BASE,
+});
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
@@ -10,25 +15,27 @@ export const AuthProvider = ({ children }) => {
     const saved = localStorage.getItem("user");
     return saved ? JSON.parse(saved) : null;
   });
-
   const [loading, setLoading] = useState(false);
 
   /* --------------------------------
-     Attach token to axios globally
+      Request Interceptor
   --------------------------------- */
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common["Authorization"];
-    }
+    const requestInterceptor = api.interceptors.request.use((config) => {
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+
+    return () => api.interceptors.request.eject(requestInterceptor);
   }, [token]);
 
   /* --------------------------------
-     Auto logout on 401
+      Response Interceptor (401 Handling)
   --------------------------------- */
   useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
+    const responseInterceptor = api.interceptors.response.use(
       (res) => res,
       (err) => {
         if (err.response?.status === 401) {
@@ -37,20 +44,13 @@ export const AuthProvider = ({ children }) => {
         return Promise.reject(err);
       }
     );
-    return () => axios.interceptors.response.eject(interceptor);
+    return () => api.interceptors.response.eject(responseInterceptor);
   }, []);
 
-  /* --------------------------------
-     LOGIN
-  --------------------------------- */
   const login = async ({ username, password }) => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/api/v1/auth/login`, {
-        username,
-        password,
-      });
-
+      const res = await api.post("/api/v1/auth/login", { username, password });
       const { token, user } = res.data;
 
       localStorage.setItem("token", token);
@@ -58,52 +58,38 @@ export const AuthProvider = ({ children }) => {
 
       setToken(token);
       setUser(user);
-
       return res.data;
     } finally {
       setLoading(false);
     }
   };
 
-  /* --------------------------------
-     REGISTER
-  --------------------------------- */
-  const register = async ({ username, email, password }) => {
+  const register = async (userData) => {
     setLoading(true);
     try {
-      await axios.post(`${API}/api/v1/auth/register`, {
-        username,
-        email,
-        password,
-      });
+      // Matches your RegisterDto (username, email, password)
+      return await api.post("/api/v1/auth/register", userData);
     } finally {
       setLoading(false);
     }
   };
 
-  /* --------------------------------
-     LOGOUT
-  --------------------------------- */
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common["Authorization"];
   };
 
-  const value = useMemo(
-    () => ({
-      token,
-      user,
-      isAuthenticated: !!token,
-      login,
-      register,
-      logout,
-      loading,
-    }),
-    [token, user, loading]
-  );
+  const value = useMemo(() => ({
+    token,
+    user,
+    isAuthenticated: !!token,
+    login,
+    register,
+    logout,
+    loading,
+  }), [token, user, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
