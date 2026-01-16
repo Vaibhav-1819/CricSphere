@@ -8,7 +8,8 @@
 ![Status](https://img.shields.io/badge/Status-Active_Development-brightgreen?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-Restricted-red?style=for-the-badge)
 
-**CricSphere** is a modern, full-stack cricket analytics and information platform built to deliver a seamless, real-time experience for cricket fans. It provides **live scores**, **match schedules**, **team & player analytics**, **ICC rankings**, and a custom **Match Impact Score (MIS)** model — all inside a fast, responsive Single Page Application (SPA).
+**CricSphere** is a modern, full-stack cricket analytics and information platform built to deliver a smooth, real-time experience for cricket fans.  
+It provides **live scores**, **match schedules**, **team & player analytics**, **ICC rankings**, and a custom **Match Impact Score (MIS)** model — inside a fast, responsive Single Page Application (SPA).
 
 > ⚠️ **Project Notice**  
 > This project is protected under a **restricted license**.  
@@ -18,20 +19,20 @@
 
 ## 🚀 Key Features
 
-### 🏏 Live Score Dashboard
-- Real-time match updates using external cricket data APIs  
-- Live match status, run rates, partnerships, and score insights  
-- Auto-refreshing UI for uninterrupted match tracking  
+- 🏏 **Live Score Dashboard**  
+  Real-time match tracking with clean UI and match insights.
 
-### 📅 Complete Cricket Ecosystem
-- Upcoming series, tours, and match schedules  
-- World teams with dynamically rendered country flags  
-- Player profiles with career statistics and performance metrics  
+- 📅 **Complete Cricket Ecosystem**  
+  Upcoming series, tours, schedules, teams, and player information.
 
-### 📊 Advanced Analytics
-- Custom **Match Impact Score (MIS)** ranking model  
-- Player form graphs & ranking movement indicators  
-- Team comparison and historical performance analysis  
+- 📊 **Advanced Analytics**  
+  Custom **Match Impact Score (MIS)** model with performance indicators.
+
+- 🔐 **Secure Authentication**  
+  Stateless JWT-based login system with Spring Security.
+
+- 🎨 **Modern UI / UX**  
+  Responsive design, dark mode support, smooth animations, and toast notifications.
 
 ---
 
@@ -142,26 +143,11 @@ Permission is granted to **view, study, and reference** this project **solely fo
 - Publish modified or unmodified versions publicly  
 - Claim this project as your own work or remove attribution  
 
-Any unauthorized use, reproduction, or distribution may result in
+Any unauthorized use, reproduction, or distribution may result in  
 **takedown requests or legal action**.
 
 For collaboration, academic reuse, or commercial licensing,  
 **explicit written permission from the author is required**.
-
-
----
-
-## 📝 Purpose & Scope
-
-CricSphere is developed as part of a **Java Full Stack Development curriculum**, demonstrating:
-
-- Secure REST API development  
-- JWT-based authentication systems  
-- Custom analytics algorithms  
-- Scalable SPA architecture  
-- Professional-grade UI/UX design  
-
-This project bridges **academic learning** with **real-world engineering practices**.
 
 ---
 
