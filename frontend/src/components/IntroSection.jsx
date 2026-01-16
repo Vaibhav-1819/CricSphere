@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Activity } from "lucide-react";
 import logo from "../assets/cricsphere-logo.png";
-import { getCurrentMatches } from "../services/api";
-/* ---------- 🧮 MATH ENGINE: Over Conversion ---------- */
+// ✅ NEW (Synced)
+import { getLiveMatches as getCurrentMatches } from "../services/api";/* ---------- 🧮 MATH ENGINE: Over Conversion ---------- */
 const toFractionalOvers = (overs) => {
   if (!overs) return 0;
   const wholeOvers = Math.floor(overs);
