@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Radio, Target, Activity } from "lucide-react";
+import { MapPin, Radio, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 /* ---------------- 🧠 ENGINE ---------------- */
@@ -17,25 +17,25 @@ export default function MatchFeed({ matches = [], title, isLiveFeed }) {
 
   const filteredMatches = useMemo(() => {
     if (filter === "all") return matches;
-    return matches.filter(m => m.matchType?.toLowerCase() === filter);
+    // Sync with 'matchFormat' field from the backend
+    return matches.filter(m => m.matchInfo?.matchFormat?.toLowerCase() === filter);
   }, [matches, filter]);
 
   return (
-    <div className="bg-[#0b1220] text-white rounded-[2.5rem] p-8 border border-white/5">
+    <div className="bg-[#0b1220] text-white rounded-[2.5rem] p-8 border border-white/5 shadow-2xl">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-        <div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
-            <div className="p-2 bg-blue-600/20 rounded-lg">
-              <Activity size={20} className="text-blue-500" />
-            </div>
-            {title}
-          </h2>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 ml-12">
-            {filteredMatches.length} Matches Found
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-blue-600/20 rounded-2xl">
+            <Activity size={24} className="text-blue-500" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black uppercase tracking-tighter">{title}</h2>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">
+              {filteredMatches.length} Matches in Feed
+            </p>
+          </div>
         </div>
 
-        {/* Format Filter Chips */}
         <div className="flex bg-slate-900/50 backdrop-blur-md rounded-2xl border border-white/5 p-1.5">
           {["all", "t20", "odi", "test"].map(t => (
             <button
@@ -43,7 +43,7 @@ export default function MatchFeed({ matches = [], title, isLiveFeed }) {
               onClick={() => setFilter(t)}
               className={`px-5 py-2 text-[10px] uppercase font-black rounded-xl transition-all duration-300 ${
                 filter === t 
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
+                  ? "bg-blue-600 text-white shadow-lg" 
                   : "text-slate-500 hover:text-slate-300"
               }`}
             >
@@ -53,13 +53,14 @@ export default function MatchFeed({ matches = [], title, isLiveFeed }) {
         </div>
       </header>
 
-      <motion.div 
-        layout
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
+      <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence mode="popLayout">
           {filteredMatches.map(m => (
-            <MatchCard key={m.id} match={m} isLiveFeed={isLiveFeed} />
+            <MatchCard 
+               key={m.matchInfo.matchId} 
+               match={m} 
+               isLiveFeed={isLiveFeed} 
+            />
           ))}
         </AnimatePresence>
       </motion.div>
@@ -71,59 +72,59 @@ export default function MatchFeed({ matches = [], title, isLiveFeed }) {
 
 const MatchCard = ({ match, isLiveFeed }) => {
   const navigate = useNavigate();
-  const done = isMatchDone(match.status);
+  const info = match.matchInfo;
+  const score = match.matchScore;
+  const done = isMatchDone(info.status);
   
-  // Logical highlight for Live vs Finished
   const cardBorder = !done && isLiveFeed 
-    ? "border-blue-500/30 bg-[#151f35] shadow-2xl shadow-blue-500/5" 
+    ? "border-blue-500/30 bg-[#151f35] shadow-2xl shadow-blue-500/10" 
     : "border-white/5 bg-[#111a2e]";
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       whileHover={{ y: -8, borderColor: "rgba(59, 130, 246, 0.5)" }}
-      onClick={() => navigate(`/match/${match.id}`)}
-      className={`group cursor-pointer rounded-3xl p-6 border transition-all duration-500 ${cardBorder}`}
+      onClick={() => navigate(`/match/${info.matchId}`)}
+      className={`group cursor-pointer rounded-[2rem] p-6 border transition-all duration-500 ${cardBorder}`}
     >
       <div className="flex justify-between items-center text-[10px] uppercase font-black mb-6">
-        <span className="px-2 py-1 bg-white/5 rounded text-slate-400 group-hover:text-blue-400 transition-colors">
-          {match.matchType}
+        <span className="px-2 py-1 bg-white/5 rounded text-slate-500 group-hover:text-blue-400">
+          {info.matchFormat}
         </span>
-        {isLiveFeed && !done && (
-          <span className="text-red-500 flex items-center gap-1.5 bg-red-500/10 px-2 py-1 rounded-full">
-            <Radio size={12} className="animate-pulse" /> LIVE
+        {!done && (
+          <span className="text-red-500 flex items-center gap-1.5 bg-red-500/10 px-2.5 py-1 rounded-full animate-pulse">
+            <Radio size={10} /> LIVE
           </span>
         )}
       </div>
 
-      <div className="space-y-3 mb-6">
+      <div className="space-y-4 mb-6">
         <TeamRow 
-          data={match.team1} 
-          winner={match.winner === match.team1.name} 
-          isBatting={match.team1.isBatting}
+          name={info.team1.teamName} 
+          score={score?.team1Score?.inngs1} 
+          isBatting={score?.team1Score?.inngs1 && !score?.team2Score?.inngs1}
         />
-        <div className="flex items-center gap-4">
-          <div className="h-px flex-1 bg-white/5" />
-          <span className="text-[9px] font-black text-slate-600 italic">VS</span>
-          <div className="h-px flex-1 bg-white/5" />
+        <div className="flex items-center gap-4 opacity-20">
+          <div className="h-px flex-1 bg-white" />
+          <span className="text-[8px] font-black italic">VS</span>
+          <div className="h-px flex-1 bg-white" />
         </div>
         <TeamRow 
-          data={match.team2} 
-          winner={match.winner === match.team2.name} 
-          isBatting={match.team2.isBatting}
+          name={info.team2.teamName} 
+          score={score?.team2Score?.inngs1} 
+          isBatting={!!score?.team2Score?.inngs1}
         />
       </div>
 
       <div className="pt-5 border-t border-white/5">
-        <div className={`text-xs font-black uppercase tracking-tight leading-tight ${done ? "text-emerald-400" : "text-blue-400"}`}>
-          {match.status}
-        </div>
-
-        <div className="text-[10px] text-slate-500 mt-2 flex items-center gap-1.5 font-bold uppercase tracking-wider">
-          <MapPin size={12} className="text-slate-600" /> {match.venue}
+        <div className={`text-xs font-black uppercase tracking-tight italic ${done ? "text-emerald-400" : "text-blue-400"}`}>
+          {info.status}
+        </p>
+        <div className="text-[9px] text-slate-500 mt-2 flex items-center gap-1.5 font-bold uppercase">
+          <MapPin size={10} /> {info.venueInfo?.shortName || "International Venue"}
         </div>
       </div>
     </motion.div>
@@ -132,34 +133,30 @@ const MatchCard = ({ match, isLiveFeed }) => {
 
 /* ---------------- 🏏 TEAM ROW ---------------- */
 
-const TeamRow = ({ data, winner, isBatting }) => {
+const TeamRow = ({ name, score, isBatting }) => {
   return (
-    <div className={`flex justify-between items-center p-3 rounded-2xl transition-colors ${
-      isBatting ? "bg-blue-500/5 border border-blue-500/10" : "bg-transparent"
+    <div className={`flex justify-between items-center p-3 rounded-2xl transition-all ${
+      isBatting ? "bg-blue-600/10 ring-1 ring-blue-500/20" : "bg-white/5"
     }`}>
       <div className="flex items-center gap-3">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black transition-transform ${
-          winner ? "bg-emerald-600 scale-110 shadow-lg shadow-emerald-600/20" : 
-          isBatting ? "bg-blue-600 animate-pulse" : "bg-slate-800"
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${
+          isBatting ? "bg-blue-600" : "bg-slate-800"
         }`}>
-          {data.name.substring(0, 2).toUpperCase()}
+          {name.substring(0, 2).toUpperCase()}
         </div>
-        <div className="flex flex-col">
-          <span className={`text-xs uppercase font-black tracking-tighter ${
-            winner ? "text-emerald-400" : isBatting ? "text-blue-400" : "text-slate-300"
-          }`}>
-            {data.name}
-          </span>
-          {isBatting && <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] mt-0.5">Batting</span>}
-        </div>
+        <span className={`text-[11px] uppercase font-black tracking-tight ${
+          isBatting ? "text-blue-400" : "text-slate-300"
+        }`}>
+          {name}
+        </span>
       </div>
 
       <div className="text-right">
         <div className="font-mono font-black text-sm">
-          {data.runs || 0}<span className="text-slate-500">/</span>{data.wickets || 0}
+          {score?.runs || 0}<span className="text-slate-600">/</span>{score?.wickets || 0}
         </div>
-        <div className="text-[9px] font-bold text-slate-600 italic">
-          {data.overs || 0} OV
+        <div className="text-[8px] font-bold text-slate-600 italic uppercase">
+          {score?.overs || 0} OV
         </div>
       </div>
     </div>

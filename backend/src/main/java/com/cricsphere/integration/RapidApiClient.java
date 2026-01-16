@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -29,69 +30,57 @@ public class RapidApiClient {
 
     private final RestTemplate restTemplate;
 
+    // Quota management
     private static final int DAILY_LIMIT = 100;
-
     private LocalDate currentDay = LocalDate.now();
     private final AtomicInteger dailyCallCount = new AtomicInteger(0);
 
-    // Cache stores even stale values (used as fallback)
+    // Cache stores: mapping unique URLs to their responses
     private final Map<String, CachedResponse> cache = new ConcurrentHashMap<>();
-
-    // Keep locks stable (no remove) to avoid race issues
     private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
     public RapidApiClient(RestTemplateBuilder restTemplateBuilder) {
         this.restTemplate = restTemplateBuilder
-                .setConnectTimeout(Duration.ofSeconds(5))
-                .setReadTimeout(Duration.ofSeconds(10))
+                .requestFactory(() -> {
+                    SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+                    factory.setConnectTimeout((int) Duration.ofSeconds(5).toMillis());
+                    factory.setReadTimeout((int) Duration.ofSeconds(10).toMillis());
+                    return factory;
+                })
                 .build();
     }
 
+    /**
+     * Optimized Fetch with Double-Checked Locking and Stale Fallback.
+     */
     public String fetch(String url, long ttlMillis) {
         rotateDayIfNeeded();
 
-        String key = "GET::" + rapidApiHost + "::" + url;
+        // Use the full URL as the key to distinguish between rankings formats/genders
+        String cacheKey = url;
 
-        // 1) Cache check
-        CachedResponse cached = cache.get(key);
-
-        // If expired, remove it (prevents cache growing forever)
-        if (cached != null && cached.isExpired()) {
-            cache.remove(key);
-            cached = null;
-        }
-
-        if (cached != null) {
+        // 1) Valid Cache Check
+        CachedResponse cached = cache.get(cacheKey);
+        if (cached != null && !cached.isExpired()) {
             return cached.body;
         }
 
-        // 2) Deduplicate requests per URL
-        Object lock = locks.computeIfAbsent(key, k -> new Object());
-
+        // 2) Synchronized Fetch (prevents "Cache Stampede")
+        Object lock = locks.computeIfAbsent(cacheKey, k -> new Object());
         synchronized (lock) {
-            // Double check after lock
-            cached = cache.get(key);
-
-            if (cached != null && cached.isExpired()) {
-                cache.remove(key);
-                cached = null;
-            }
-
-            if (cached != null) {
+            // Double check after acquiring lock
+            cached = cache.get(cacheKey);
+            if (cached != null && !cached.isExpired()) {
                 return cached.body;
             }
 
-            // 3) Quota Guard
+            // 3) Quota Check
             if (dailyCallCount.get() >= DAILY_LIMIT) {
-                log.warn("🚨 RapidAPI daily quota hit ({}). Serving fallback.", DAILY_LIMIT);
-
-                CachedResponse lastKnown = cache.get(key);
-                if (lastKnown != null) return lastKnown.body;
-
-                return "{\"error\":true,\"message\":\"RapidAPI quota exceeded\",\"data\":null}";
+                log.warn("🚨 Quota Limit ({}) hit. Serving stale fallback for: {}", DAILY_LIMIT, url);
+                return (cached != null) ? cached.body : getQuotaErrorJson();
             }
 
-            return executeRequest(url, key, ttlMillis);
+            return executeRequest(url, cacheKey, ttlMillis);
         }
     }
 
@@ -101,7 +90,7 @@ public class RapidApiClient {
             headers.set("x-rapidapi-key", rapidApiKey);
             headers.set("x-rapidapi-host", rapidApiHost);
 
-            log.info("📡 RapidAPI Request: {} (Call #{})", url, dailyCallCount.get() + 1);
+            log.info("📡 API Call #{} | Requesting: {}", dailyCallCount.get() + 1, url);
 
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
@@ -118,19 +107,19 @@ public class RapidApiClient {
                 return body;
             }
 
-            log.warn("⚠ RapidAPI returned empty body: {}", url);
-            return "{\"error\":true,\"message\":\"Empty response from RapidAPI\",\"data\":null}";
+            return getErrorJson("Empty response from RapidAPI");
 
         } catch (Exception e) {
-            log.error("❌ RapidAPI Request Failed: {}", e.getMessage());
-
-            CachedResponse lastKnown = cache.get(key);
-            if (lastKnown != null) {
-                log.warn("Serving stale cached data for {}", url);
-                return lastKnown.body;
+            log.error("❌ API Request Failed: {}", e.getMessage());
+            
+            // If request fails, try to return the expired cache as a fallback
+            CachedResponse stale = cache.get(key);
+            if (stale != null) {
+                log.warn("🔄 Serving stale data as fallback for: {}", url);
+                return stale.body;
             }
 
-            return "{\"error\":true,\"message\":\"RapidAPI request failed\",\"data\":null}";
+            return getErrorJson("API connection failed: " + e.getMessage());
         }
     }
 
@@ -139,8 +128,16 @@ public class RapidApiClient {
         if (!today.equals(currentDay)) {
             currentDay = today;
             dailyCallCount.set(0);
-            log.info("🔄 RapidAPI quota reset for new day: {}", today);
+            log.info("🔄 Daily API quota reset for: {}", today);
         }
+    }
+
+    private String getQuotaErrorJson() {
+        return "{\"error\":true,\"status\":429,\"message\":\"Daily API quota exceeded. Try again tomorrow.\"}";
+    }
+
+    private String getErrorJson(String msg) {
+        return String.format("{\"error\":true,\"status\":500,\"message\":\"%s\"}", msg);
     }
 
     @Getter

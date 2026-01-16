@@ -1,107 +1,136 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap } from 'lucide-react';
+import { Activity, ChevronRight, Trophy } from 'lucide-react';
+import { matchApi } from '../services/api';
 
 const IntroPage = () => {
   const navigate = useNavigate();
+  const [liveMatch, setLiveMatch] = useState(null);
+  const [loadingMatch, setLoadingMatch] = useState(true);
 
-  // Auto-redirect logic after the progress bar completes
   useEffect(() => {
-    const timer = setTimeout(() => navigate('/home'), 5000);
+    // 1. Fetch the live match for the preview card
+    const fetchPreview = async () => {
+      try {
+        const res = await matchApi.getLive();
+        // Accessing the first match from the RapidAPI/Cricbuzz structure
+        const match = res.data?.typeMatches?.[0]?.seriesMatches?.[0]?.seriesAdWrapper?.matches?.[0];
+        setLiveMatch(match);
+      } catch (err) {
+        console.error("Live feed sync failed", err);
+      } finally {
+        setLoadingMatch(false);
+      }
+    };
+
+    fetchPreview();
+
+    // 2. Auto-redirect after 6 seconds
+    const timer = setTimeout(() => navigate('/home'), 6000);
     return () => clearTimeout(timer);
   }, [navigate]);
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-center items-center text-center overflow-hidden bg-[#0b1220]">
+    <div className="relative min-h-screen flex flex-col justify-center items-center text-center overflow-hidden bg-[#f8fafc]">
       
-      {/* 1. Animated Layered Background */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2 }}
-        className="absolute inset-0 z-0"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0b1220] via-[#111a2e] to-black"></div>
-        
-        {/* Cinematic Ambient Glows */}
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px]" />
-      </motion.div>
+      {/* Background Architecture */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:40px_40px] opacity-40" />
+      </div>
 
-      {/* 2. Main Glassmorphism Card */}
       <motion.div
-        initial={{ y: 30, opacity: 0 }}
+        initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-        className="relative z-10 p-10 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-2xl shadow-2xl max-w-2xl mx-4"
+        className="relative z-10 w-full max-w-2xl px-6"
       >
-        {/* Pulsing Logo Icon */}
-        <div className="flex justify-center mb-6">
-           <motion.div 
-            animate={{ 
-              scale: [1, 1.15, 1],
-              boxShadow: [
-                "0px 0px 0px rgba(37, 99, 235, 0)", 
-                "0px 0px 30px rgba(37, 99, 235, 0.4)", 
-                "0px 0px 0px rgba(37, 99, 235, 0)"
-              ]
-            }}
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="p-5 bg-blue-600 rounded-3xl"
-           >
-             <Zap className="text-white fill-white" size={40} />
-           </motion.div>
-        </div>
-
-        {/* Brand Typography */}
-        <h1 className="text-6xl md:text-8xl font-black mb-4 tracking-tighter italic uppercase text-white">
-          Cric<span className="text-blue-500">Sphere</span>
+        {/* Brand Header */}
+        <h1 className="text-5xl md:text-7xl font-black mb-4 tracking-tight text-slate-900">
+          Cric<span className="text-blue-600">Sphere.</span>
         </h1>
-
-        {/* Subtitle with decorative lines */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="flex items-center justify-center gap-3 mb-8"
-        >
-          <div className="h-px w-10 bg-gradient-to-r from-transparent to-blue-500/50" />
-          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
-            Intelligent Analytics Engine
-          </span>
-          <div className="h-px w-10 bg-gradient-to-l from-transparent to-blue-500/50" />
-        </motion.div>
-
-        <p className="text-slate-400 text-sm md:text-base mb-10 leading-relaxed font-medium">
-          Experience the next generation of cricket telemetry. Real-time scores, 
-          advanced MIS analytics, and deep-dive player insights synced via Spring Boot.
+        <p className="text-slate-500 font-medium mb-10 tracking-wide uppercase text-[10px]">
+          Professional Cricket Intelligence & Telemetry
         </p>
 
-        {/* Manual Entry Action */}
-        <motion.button
-          onClick={() => navigate('/home')}
-          whileHover={{ scale: 1.05, backgroundColor: "#2563eb", color: "#fff" }}
-          whileTap={{ scale: 0.95 }}
-          className="px-10 py-4 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-xl transition-all duration-300"
+        {/* Unified Live Match Preview Card */}
+        <motion.div 
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden mb-12"
         >
-          Enter Arena
-        </motion.button>
+          <div className="bg-slate-900 px-6 py-2.5 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[9px] font-black text-white uppercase tracking-[0.2em]">Live Arena Feed</span>
+            </div>
+            {liveMatch && (
+              <span className="text-[9px] font-bold text-slate-400 uppercase">
+                {liveMatch.matchInfo?.seriesName}
+              </span>
+            )}
+          </div>
+
+          <div className="p-8">
+            {loadingMatch ? (
+              <div className="py-4 flex flex-col items-center gap-3">
+                <Activity className="animate-spin text-blue-600" size={24} />
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Connecting to Sat-Link...</span>
+              </div>
+            ) : liveMatch ? (
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold text-slate-900">{liveMatch.matchInfo.team1.teamName}</h4>
+                  <p className="text-2xl font-black text-blue-600">
+                    {liveMatch.matchScore?.team1Score?.inngs1?.runs || 0}/{liveMatch.matchScore?.team1Score?.inngs1?.wickets || 0}
+                  </p>
+                </div>
+                <div className="h-10 w-px bg-slate-100" />
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold text-slate-900">{liveMatch.matchInfo.team2.teamName}</h4>
+                  <p className="text-2xl font-black text-slate-300">Yet to Bat</p>
+                </div>
+              </div>
+            ) : (
+              <div className="py-4 flex flex-col items-center gap-2 text-slate-400">
+                <Trophy size={24} />
+                <span className="text-xs font-bold uppercase">No Active International Fixtures</span>
+              </div>
+            )}
+          </div>
+
+          {liveMatch && (
+            <div className="bg-slate-50 py-3 border-t border-slate-100">
+              <p className="text-[10px] font-bold text-slate-500 uppercase italic">
+                {liveMatch.matchInfo.status}
+              </p>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Action Button */}
+        <button
+          onClick={() => navigate('/home')}
+          className="group flex items-center gap-3 mx-auto px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-lg hover:bg-blue-600 transition-all duration-300"
+        >
+          Enter Full Arena
+          <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+        </button>
       </motion.div>
 
-      {/* 3. Global Synchronized Loading Bar */}
-      <div className="absolute bottom-16 flex flex-col items-center gap-4">
-        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500 animate-pulse">
-          Initializing Stream
-        </span>
-        <div className="w-64 h-1 bg-white/5 rounded-full overflow-hidden">
+      {/* Footer System Sync */}
+      <div className="absolute bottom-12 w-full max-w-xs px-10">
+        <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: "100%" }}
-            transition={{ duration: 5, ease: "linear" }}
-            className="h-full bg-gradient-to-r from-blue-600 to-emerald-500"
+            transition={{ duration: 6, ease: "linear" }}
+            className="h-full bg-blue-600"
           />
         </div>
+        <p className="mt-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+          Syncing Analytics Engine v2.0
+        </p>
       </div>
     </div>
   );

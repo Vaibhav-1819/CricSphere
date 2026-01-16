@@ -2,141 +2,139 @@ import React, { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Bookmark, Clock, ChevronRight,
-  LayoutGrid, List, Newspaper, ExternalLink, Flame, Info
+  LayoutGrid, List, Newspaper, ExternalLink, Flame, Info, Loader2
 } from "lucide-react";
-import useFetch from "../hooks/useFetch";
+import api from "../services/api"; // Updated to use your perfected api.js
 
 /* ---------------- 🧠 NORMALIZATION ENGINE ---------------- */
-// Ensures that data from various providers (Cricbuzz, custom, etc.) follows one schema
 const normalize = (n) => {
   const s = n.story || n;
   
-  // Cricbuzz often uses milliseconds for timestamps, ensure we handle both
-  const rawTime = s.publishedAt || s.pubTime || Date.now();
-  const timeStamp = String(rawTime).length === 10 ? rawTime * 1000 : rawTime;
+  // Cricbuzz uses imageId; we construct the high-res URL manually
+  const imageUrl = s.imageId 
+    ? `https://www.cricbuzz.com/a/img/v1/600x400/i1/${s.imageId}.jpg` 
+    : "https://via.placeholder.com/600x400?text=Cricsphere+News";
 
   return {
     id: s.id || s.storyId,
-    title: s.title || s.hline,
-    description: s.description || s.intro || "No description available for this briefing.",
-    imageUrl: s.imageUrl || (s.imageId ? `https://www.cricbuzz.com/a/img/v1/600x400/i1/${s.imageId}.jpg` : "/placeholder-news.jpg"),
-    source: s.source || "Global Intel",
-    publishedAt: timeStamp,
-    url: s.url || `https://www.cricbuzz.com/cricket-news/${s.id}`
+    title: s.hline || s.title,
+    description: s.intro || s.description || "Intelligence briefing available in full report.",
+    imageUrl: imageUrl,
+    source: s.source || "International Feed",
+    publishedAt: s.pubTime || Date.now(),
+    url: s.id ? `https://www.cricbuzz.com/cricket-news/${s.id}` : "#"
   };
 };
 
-/* ---------------- 🏛️ MAIN COMPONENT ---------------- */
-
 export default function News() {
-  const { data, loading, error } = useFetch("/api/v1/cricket/news");
-
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
   const [viewMode, setViewMode] = useState("grid");
   const [search, setSearch] = useState("");
   
   const [bookmarks, setBookmarks] = useState(() => {
-    try {
-      const saved = localStorage.getItem("news_bookmarks");
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+    const saved = localStorage.getItem("news_bookmarks");
+    return saved ? JSON.parse(saved) : [];
   });
+
+  useEffect(() => {
+    setLoading(true);
+    api.get("/api/v1/cricket/news")
+      .then(res => {
+        setData(res.data);
+        setError(false);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("news_bookmarks", JSON.stringify(bookmarks));
   }, [bookmarks]);
 
-  const articles = useMemo(() => {
-    const list = data?.data || data?.stories || [];
-    return list.map(normalize);
-  }, [data]);
-
   const processedNews = useMemo(() => {
-    return articles.filter(item => {
-      const isSaved = bookmarks.includes(item.id);
-      const matchTab = activeTab === "All" || (activeTab === "Saved" && isSaved);
-      const matchSearch = item.title?.toLowerCase().includes(search.toLowerCase()) || 
-                          item.description?.toLowerCase().includes(search.toLowerCase());
-      return matchTab && matchSearch;
-    });
-  }, [articles, activeTab, search, bookmarks]);
+    // 🟢 CRITICAL SYNC: Backend returns 'storyList'
+    const list = data?.storyList || [];
+    return list
+      .filter(item => item.story) // Cricbuzz nests items inside a 'story' object
+      .map(normalize)
+      .filter(item => {
+        const isSaved = bookmarks.includes(item.id);
+        const matchTab = activeTab === "All" || (activeTab === "Saved" && isSaved);
+        const matchSearch = item.title?.toLowerCase().includes(search.toLowerCase());
+        return matchTab && matchSearch;
+      });
+  }, [data, activeTab, search, bookmarks]);
 
   const toggleBookmark = (id) => {
     setBookmarks(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  if (error) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#080a0f]">
-      <div className="text-center p-12 bg-red-500/5 border border-red-500/20 rounded-[3rem]">
-        <Info className="mx-auto text-red-500 mb-4" size={48} />
-        <h2 className="text-2xl font-black uppercase italic text-white">Intel Uplink Failed</h2>
-        <p className="text-slate-500 text-sm mt-2">The news server is currently unreachable.</p>
-      </div>
-    </div>
-  );
+  if (error) return <ErrorState />;
 
   return (
-    <div className="min-h-screen bg-[#080a0f] text-white p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900">
+      {/* Background Decor */}
+      <div className="fixed inset-0 pointer-events-none opacity-40">
+        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:32px_32px]" />
+      </div>
 
-        {/* 🟢 HEADER */}
+      <div className="max-w-7xl mx-auto px-6 py-12">
         <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
           <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-blue-600/20 rounded-lg text-blue-500">
-                <Newspaper size={20} />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Live Global Briefing</span>
+            <div className="flex items-center gap-2 mb-2">
+              <Newspaper size={18} className="text-blue-600" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Global Intel Feed</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none">
-              Cricket <span className="text-blue-500">Feed</span>
+            <h1 className="text-5xl font-black text-slate-900 tracking-tight">
+              News <span className="text-blue-600">Hub.</span>
             </h1>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-            <div className="relative group flex-1 sm:w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+            <div className="relative flex-1 sm:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
-                placeholder="Search intel..."
+                placeholder="Search headlines..."
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-white/5 bg-[#111827] focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-blue-600 outline-none transition-all shadow-sm"
               />
             </div>
 
-            <div className="flex bg-[#111827] p-1 rounded-2xl border border-white/5">
-              <button onClick={() => setViewMode("grid")} className={`p-2.5 rounded-xl transition-all ${viewMode === "grid" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-slate-500 hover:text-slate-300"}`}>
+            <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+              <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-slate-900 text-white" : "text-slate-400"}`}>
                 <LayoutGrid size={18} />
               </button>
-              <button onClick={() => setViewMode("list")} className={`p-2.5 rounded-xl transition-all ${viewMode === "list" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-slate-500 hover:text-slate-300"}`}>
+              <button onClick={() => setViewMode("list")} className={`p-2 rounded-lg transition-all ${viewMode === "list" ? "bg-slate-900 text-white" : "text-slate-400"}`}>
                 <List size={18} />
               </button>
             </div>
           </div>
         </header>
 
-        {/* 🔵 TABS */}
-        <div className="flex gap-3 mb-10 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-4 mb-10 overflow-x-auto pb-2 scrollbar-hide">
           {["All", "Saved"].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`whitespace-nowrap px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                activeTab === tab ? "bg-white text-black" : "bg-white/5 text-slate-500 border border-white/5 hover:bg-white/10"
+              className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === tab ? "bg-blue-600 text-white" : "bg-white text-slate-500 border border-slate-200 hover:border-blue-400"
               }`}
             >
-              {tab === "Saved" ? `Bookmarks (${bookmarks.length})` : tab}
+              {tab === "Saved" ? `Saved Intel (${bookmarks.length})` : tab}
             </button>
           ))}
         </div>
 
-        {/* 🟠 MAIN CONTENT */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className={`lg:col-span-8 ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-6'}`}>
-            <AnimatePresence mode="popLayout">
-              {loading ? (
-                [...Array(6)].map((_, i) => <NewsSkeleton key={i} viewMode={viewMode} />)
-              ) : (
-                processedNews.map(item => (
+          <div className={`lg:col-span-8 ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-8' : 'space-y-6'}`}>
+            {loading ? (
+              [...Array(4)].map((_, i) => <NewsSkeleton key={i} viewMode={viewMode} />)
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {processedNews.map(item => (
                   <NewsItem
                     key={item.id}
                     data={item}
@@ -144,40 +142,23 @@ export default function News() {
                     isBookmarked={bookmarks.includes(item.id)}
                     onBookmark={() => toggleBookmark(item.id)}
                   />
-                ))
-              )}
-            </AnimatePresence>
-            {!loading && processedNews.length === 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-full py-32 text-center">
-                <div className="inline-flex p-6 rounded-full bg-white/5 mb-4 text-slate-700">
-                  <Bookmark size={48} strokeWidth={1} />
-                </div>
-                <h2 className="text-2xl font-black uppercase text-slate-700">Zero Intel Matches</h2>
-                <p className="text-slate-600 text-sm mt-2">Try adjusting your filters or search keywords.</p>
-              </motion.div>
+                ))}
+              </AnimatePresence>
             )}
           </div>
 
-          {/* 🟣 SIDEBAR */}
-          <aside className="hidden lg:block lg:col-span-4 space-y-8">
-            <div className="bg-[#111a2e] rounded-[2.5rem] p-8 border border-white/5 shadow-2xl sticky top-8">
-              <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-3 text-slate-400">
-                <Flame size={18} className="text-orange-500" /> Trending Topics
+          <aside className="hidden lg:block lg:col-span-4">
+            <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-200/50 sticky top-8">
+              <h3 className="text-xs font-black uppercase tracking-[0.1em] mb-6 flex items-center gap-2 text-slate-900">
+                <Flame size={16} className="text-orange-500" /> Trending Analysis
               </h3>
-              <div className="space-y-5">
-                {["#IPL2026", "#KohliStats", "#WTCFinal", "#BGT2026", "#ChampionsTrophy"].map(t => (
-                  <div key={t} className="flex justify-between items-center group cursor-pointer">
-                    <span className="text-sm font-bold text-slate-500 group-hover:text-blue-500 transition-colors">{t}</span>
-                    <div className="p-1.5 bg-white/5 rounded-lg group-hover:bg-blue-600 transition-all">
-                      <ChevronRight size={14} className="group-hover:text-white" />
-                    </div>
+              <div className="space-y-4">
+                {["Champions Trophy 2025", "WTC Standings", "IPL Retention Hub"].map(t => (
+                  <div key={t} className="flex justify-between items-center group cursor-pointer p-3 hover:bg-slate-50 rounded-xl transition-all">
+                    <span className="text-xs font-bold text-slate-600 group-hover:text-blue-600">#{t.replace(/\s/g, '')}</span>
+                    <ChevronRight size={14} className="text-slate-300" />
                   </div>
                 ))}
-              </div>
-
-              <div className="mt-12 p-6 rounded-3xl bg-blue-600/5 border border-blue-500/10">
-                 <h4 className="text-[10px] font-black uppercase text-blue-500 mb-2">Editor's Note</h4>
-                 <p className="text-xs text-slate-400 leading-relaxed italic">"The transition to the 2026 season marks a massive shift in player telemetry tracking..."</p>
               </div>
             </div>
           </aside>
@@ -187,63 +168,36 @@ export default function News() {
   );
 }
 
-/* ---------------- 🃏 ITEM CARD ---------------- */
-
 const NewsItem = ({ data, viewMode, isBookmarked, onBookmark }) => {
   const isList = viewMode === "list";
 
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ y: -5 }}
-      className={`bg-[#111827] rounded-[2rem] border border-white/5 overflow-hidden transition-all duration-500 hover:border-blue-500/30 group ${isList ? "flex flex-col md:flex-row h-auto md:h-64" : "block h-full"}`}
+      className={`bg-white rounded-[2rem] border border-slate-200 overflow-hidden hover:border-blue-500 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-100 group ${isList ? "flex h-56" : "block"}`}
     >
-      <div className={`overflow-hidden relative ${isList ? "w-full md:w-80 flex-shrink-0" : "w-full h-52"}`}>
-        <img 
-          src={data.imageUrl} 
-          alt={data.title}
-          loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111827] to-transparent opacity-60 md:hidden" />
+      <div className={`overflow-hidden relative ${isList ? "w-64 h-full" : "w-full h-48"}`}>
+        <img src={data.imageUrl} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="" />
       </div>
 
-      <div className="p-8 flex flex-col flex-1">
-        <div className="flex justify-between items-center mb-4">
-          <div className="text-[9px] font-black uppercase tracking-widest text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/10">
-            {data.source}
-          </div>
-          <button 
-            onClick={(e) => { e.preventDefault(); onBookmark(); }} 
-            className={`transition-all duration-300 ${isBookmarked ? "text-blue-500 scale-125" : "text-slate-600 hover:text-blue-400"}`}
-          >
-            <Bookmark size={18} fill={isBookmarked ? "currentColor" : "none"} />
+      <div className="p-6 flex flex-col flex-1">
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">{data.source}</span>
+          <button onClick={() => onBookmark()} className={`transition-colors ${isBookmarked ? "text-blue-600" : "text-slate-300 hover:text-blue-400"}`}>
+            <Bookmark size={16} fill={isBookmarked ? "currentColor" : "none"} />
           </button>
         </div>
-
-        <h3 className="text-lg font-black text-white group-hover:text-blue-400 transition-colors line-clamp-2 uppercase tracking-tighter leading-tight mb-3">
+        <h3 className="text-sm font-black text-slate-900 line-clamp-2 leading-tight mb-2 uppercase group-hover:text-blue-600 transition-colors">
           {data.title}
         </h3>
-
-        <p className="text-xs text-slate-500 line-clamp-2 font-medium leading-relaxed mb-4">
-          {data.description}
-        </p>
-
-        <div className="mt-auto flex justify-between items-center pt-5 border-t border-white/5">
-          <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 uppercase tracking-widest">
-            <Clock size={12} className="text-blue-500/50"/> {new Date(data.publishedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+        <p className="text-[11px] text-slate-500 line-clamp-2 font-medium mb-4">{data.description}</p>
+        <div className="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
+          <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
+            <Clock size={12} /> {new Date(data.publishedAt).toLocaleDateString()}
           </span>
-          <a 
-            href={data.url} 
-            target="_blank" 
-            rel="noreferrer" 
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl text-xs font-black uppercase tracking-widest text-white hover:bg-blue-600 transition-all"
-          >
-            Read <ExternalLink size={12} />
-          </a>
+          <a href={data.url} target="_blank" rel="noreferrer" className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">Read More</a>
         </div>
       </div>
     </motion.div>
@@ -251,13 +205,20 @@ const NewsItem = ({ data, viewMode, isBookmarked, onBookmark }) => {
 };
 
 const NewsSkeleton = ({ viewMode }) => (
-  <div className={`bg-white/5 rounded-[2rem] animate-pulse border border-white/5 ${viewMode === 'list' ? 'h-64 flex' : 'h-96 block'}`}>
-    <div className={`${viewMode === 'list' ? 'w-80 h-full' : 'w-full h-52'} bg-white/10`} />
-    <div className="p-8 flex-1 space-y-4">
-      <div className="w-20 h-3 bg-white/10 rounded-full" />
-      <div className="w-full h-10 bg-white/10 rounded-lg" />
-      <div className="w-2/3 h-4 bg-white/10 rounded-lg" />
-      <div className="mt-auto w-full h-10 bg-white/5 rounded-xl" />
+  <div className={`bg-white rounded-[2rem] border border-slate-100 animate-pulse ${viewMode === 'list' ? 'h-56 flex' : 'h-80'}`}>
+    <div className={`${viewMode === 'list' ? 'w-64' : 'w-full h-40'} bg-slate-100`} />
+    <div className="p-6 flex-1 space-y-4">
+      <div className="w-20 h-2 bg-slate-100 rounded" />
+      <div className="w-full h-8 bg-slate-100 rounded" />
+      <div className="w-full h-12 bg-slate-100 rounded" />
     </div>
+  </div>
+);
+
+const ErrorState = () => (
+  <div className="h-screen flex flex-col items-center justify-center bg-[#f8fafc]">
+    <Info className="text-slate-300 mb-4" size={48} />
+    <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Connection Interrupted</h2>
+    <p className="text-slate-400 text-sm">The news uplink is currently unavailable.</p>
   </div>
 );

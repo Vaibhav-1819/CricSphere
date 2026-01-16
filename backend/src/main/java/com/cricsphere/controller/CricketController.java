@@ -17,101 +17,108 @@ public class CricketController {
     }
 
     /* =========================================================
-       LIVE / UPCOMING / RECENT
+        LIVE / UPCOMING / RECENT
     ========================================================= */
 
     @GetMapping("/live")
-    public ResponseEntity<String> getLiveMatches() {
-        log.info("GET /live");
+    public ResponseEntity<Object> getLiveMatches() {
+        log.info("GET /api/v1/cricket/live");
         return ResponseEntity.ok(cricketService.getLiveMatches());
     }
 
     @GetMapping("/upcoming")
-    public ResponseEntity<String> getUpcomingMatches() {
-        log.info("GET /upcoming");
+    public ResponseEntity<Object> getUpcomingMatches() {
+        log.info("GET /api/v1/cricket/upcoming");
         return ResponseEntity.ok(cricketService.getUpcomingMatches());
     }
 
     @GetMapping("/recent")
-    public ResponseEntity<String> getRecentMatches() {
-        log.info("GET /recent");
+    public ResponseEntity<Object> getRecentMatches() {
+        log.info("GET /api/v1/cricket/recent");
         return ResponseEntity.ok(cricketService.getRecentMatches());
     }
 
     /* =========================================================
-       MATCH DATA
+        MATCH DATA
     ========================================================= */
 
     @GetMapping("/match/{matchId}")
-    public ResponseEntity<String> getMatchInfo(@PathVariable String matchId) {
+    public ResponseEntity<Object> getMatchInfo(@PathVariable String matchId) {
+        log.info("GET /api/v1/cricket/match/{}", matchId);
         return ResponseEntity.ok(cricketService.getMatchInfo(matchId));
     }
 
     @GetMapping("/scorecard/{matchId}")
-    public ResponseEntity<String> getScorecard(@PathVariable String matchId) {
+    public ResponseEntity<Object> getScorecard(@PathVariable String matchId) {
         return ResponseEntity.ok(cricketService.getScorecard(matchId));
     }
 
     @GetMapping("/commentary/{matchId}")
-    public ResponseEntity<String> getCommentary(@PathVariable String matchId) {
+    public ResponseEntity<Object> getCommentary(@PathVariable String matchId) {
         return ResponseEntity.ok(cricketService.getCommentary(matchId));
     }
 
     @GetMapping("/squads/{matchId}")
-    public ResponseEntity<String> getSquads(@PathVariable String matchId) {
+    public ResponseEntity<Object> getSquads(@PathVariable String matchId) {
         return ResponseEntity.ok(cricketService.getSquads(matchId));
     }
 
     @GetMapping("/overs/{matchId}")
-    public ResponseEntity<String> getOvers(@PathVariable String matchId) {
+    public ResponseEntity<Object> getOvers(@PathVariable String matchId) {
         return ResponseEntity.ok(cricketService.getOvers(matchId));
     }
 
     /* =========================================================
-       SERIES / STATS
+        SERIES / STATS (INTERNATIONAL RANKINGS)
     ========================================================= */
 
     @GetMapping("/series")
-    public ResponseEntity<?> getSeries() {
+    public ResponseEntity<Object> getSeries() {
         return ResponseEntity.ok(cricketService.getSeriesList());
     }
 
     @GetMapping("/series/{seriesId}")
-    public ResponseEntity<?> getSeriesDetail(@PathVariable String seriesId) {
+    public ResponseEntity<Object> getSeriesDetail(@PathVariable String seriesId) {
         return ResponseEntity.ok(cricketService.getSeriesDetail(seriesId));
     }
 
-    @GetMapping("/rankings")
-    public ResponseEntity<String> getRankings() {
-        return ResponseEntity.ok(cricketService.getRankings());
+    /**
+     * Dynamic International Rankings
+     * Supports params: format (t20, odi, test) and isWomen (0 or 1)
+     */
+    @GetMapping("/rankings/international")
+    public ResponseEntity<Object> getRankings(
+            @RequestParam(defaultValue = "t20") String format,
+            @RequestParam(defaultValue = "0") String isWomen) {
+        log.info("GET /api/v1/cricket/rankings/international | Format: {}, Women: {}", format, isWomen);
+        return ResponseEntity.ok(cricketService.getRankings(format, isWomen));
     }
 
     /* =========================================================
-   TEAMS / PLAYERS / VENUES
-========================================================= */
+        TEAMS / PLAYERS / VENUES
+    ========================================================= */
 
-@GetMapping("/teams")
-public ResponseEntity<String> getTeamsDefault() {
-    return ResponseEntity.ok(cricketService.getTeams("all"));
-}
+    @GetMapping("/teams")
+    public ResponseEntity<Object> getTeamsDefault() {
+        return ResponseEntity.ok(cricketService.getTeams("all"));
+    }
 
-@GetMapping("/teams/{type}")
-public ResponseEntity<String> getTeams(@PathVariable String type) {
-    return ResponseEntity.ok(cricketService.getTeams(type));
-}
-
+    @GetMapping("/teams/{type}")
+    public ResponseEntity<Object> getTeams(@PathVariable String type) {
+        return ResponseEntity.ok(cricketService.getTeams(type));
+    }
 
     /* =========================================================
-       NEWS
+        NEWS
     ========================================================= */
 
     @GetMapping("/news")
-    public ResponseEntity<String> getNews() {
+    public ResponseEntity<Object> getNews() {
         return ResponseEntity.ok(cricketService.getNews());
     }
 
     @GetMapping("/news/{id}")
-    public ResponseEntity<String> getNewsDetails(@PathVariable String id) {
+    public ResponseEntity<Object> getNewsDetails(@PathVariable String id) {
         return ResponseEntity.ok(cricketService.getNewsDetails(id));
     }
 }

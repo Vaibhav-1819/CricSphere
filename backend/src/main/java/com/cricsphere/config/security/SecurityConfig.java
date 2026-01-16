@@ -47,8 +47,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
+        // Use constructor that accepts UserDetailsService to avoid the deprecated setter
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
@@ -68,21 +68,20 @@ public class SecurityConfig {
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
 
-                    // 🔓 Auth Endpoints (Public)
+                    // 🔓 Auth Endpoints: Public for Login/Register
                     .requestMatchers("/api/v1/auth/**").permitAll()
 
-                    // 🔓 Public Data Endpoints (Guests can view)
+                    // 🔓 Public Data: Includes /live, /rankings/international, etc.
+                    // This covers the new dynamic rankings endpoint we added
                     .requestMatchers(HttpMethod.GET, "/api/v1/cricket/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/stats/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/news/**").permitAll()
 
-                    // 🔓 Basic system routes
+                    // 🔓 Technical/System routes
                     .requestMatchers("/", "/error", "/favicon.ico").permitAll()
-
-                    // 🔓 Actuator health only (safe)
                     .requestMatchers("/actuator/health").permitAll()
 
-                    // 🔒 Everything else requires login
+                    // 🔒 Secured: Profile updates, favorite team selection, etc.
                     .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
@@ -93,10 +92,9 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ Use only allowedOriginPatterns (recommended for Vercel wildcard)
+        // Allows local dev and any Vercel deployment preview
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
@@ -104,7 +102,7 @@ public class SecurityConfig {
         ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
+        
         config.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
@@ -113,7 +111,7 @@ public class SecurityConfig {
         ));
 
         config.setExposedHeaders(List.of("Authorization"));
-        config.setAllowCredentials(true);
+        config.setAllowCredentials(true); // Required for sending JWT via headers/cookies if needed
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

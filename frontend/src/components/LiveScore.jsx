@@ -1,38 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Radio,
   Trophy,
   RefreshCcw,
   AlertCircle,
   Loader2,
   ChevronRight,
-  Zap
+  Zap,
+  Activity
 } from "lucide-react";
 import { getLiveMatches } from "../services/api";
 
-/* =========================
-   Helpers
-========================= */
-const isLive = (status = "") => {
-  const s = status.toLowerCase();
-  return s.includes("need") || s.includes("trail") || s.includes("lead") || s.includes("opt");
-};
-
-/* =========================
-   Page
-========================= */
 export default function LiveScore() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const res = await getLiveMatches();
-      // 🟢 DEFENSIVE MAPPING: Ensures 'matches' is always an array
-      const data = res.data?.type || res.data?.matches || (Array.isArray(res.data) ? res.data : []);
-      setMatches(data);
+      
+      /**
+       * 🟢 CRITICAL FIX: DATA MAPPING
+       * RapidAPI Cricbuzz Structure: res.data.typeMatches -> seriesMatches -> seriesAdWrapper -> matches
+       */
+      const typeMatches = res.data?.typeMatches || [];
+      const extractedMatches = [];
+
+      typeMatches.forEach((type) => {
+        type.seriesMatches.forEach((series) => {
+          if (series.seriesAdWrapper?.matches) {
+            extractedMatches.push(...series.seriesAdWrapper.matches);
+          }
+        });
+      });
+
+      setMatches(extractedMatches);
       setError(false);
     } catch (err) {
       console.error("Live Score Sync Failed", err);
@@ -40,55 +43,57 @@ export default function LiveScore() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 60000); // 1 min for live scores
+    const t = setInterval(load, 60000); 
     return () => clearInterval(t);
-  }, []);
+  }, [load]);
 
   if (loading) return <LoadingState />;
   if (error) return <ErrorState retry={load} />;
 
   return (
-    <div className="min-h-screen bg-[#080a0f] text-slate-200 selection:bg-blue-500/30">
-      {/* Background Decor */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-10">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-red-600 rounded-full blur-[120px]" />
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 pointer-events-none opacity-40">
+        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:40px_40px]" />
       </div>
 
       <div className="container relative mx-auto px-6 py-12">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20">
-              <Trophy className="text-amber-500" size={28} />
+            <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-200">
+              <Trophy className="text-white" size={28} />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic">
-                Live Match <span className="text-blue-500">Center</span>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+                Match <span className="text-blue-600">Center</span>
               </h1>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Real-time Global Analytics</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">
+                Real-Time Analytics Dashboard
+              </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/10">
-            <div className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Live Telemetry Active</span>
+          <div className="flex items-center gap-3 px-5 py-2.5 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <div className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Telemetry Active</span>
           </div>
         </header>
 
-        {/* 🟢 Defensive Map Check */}
-        {Array.isArray(matches) && matches.length > 0 ? (
+        {matches.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {matches.map((m) => (
-              <MatchCard key={m.matchId} match={m} />
+              <MatchCard key={m.matchInfo.matchId} match={m} />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 bg-white/[0.02] rounded-3xl border border-dashed border-white/10">
-            <Radio className="text-slate-800 mb-4" size={48} />
-            <p className="text-sm font-bold text-slate-500">No active matches found in the arena.</p>
+          <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-slate-200 shadow-sm">
+            <Activity className="text-slate-200 mb-4" size={64} />
+            <p className="text-lg font-bold text-slate-400">No active matches found in the arena.</p>
+            <p className="text-sm text-slate-300">Syncing with global servers...</p>
           </div>
         )}
       </div>
@@ -97,75 +102,79 @@ export default function LiveScore() {
 }
 
 /* =========================
-   Match Card (Glassmorphism)
+   Match Card (Professional Theme)
 ========================= */
 const MatchCard = ({ match }) => {
   const nav = useNavigate();
+  const info = match.matchInfo;
+  const score = match.matchScore;
 
-  const t1 = match.team1?.teamName || "Team 1";
-  const t2 = match.team2?.teamName || "Team 2";
-  const s1 = match.matchScore?.team1Score?.inngs1;
-  const s2 = match.matchScore?.team2Score?.inngs1;
+  const isLiveMatch = info.status.toLowerCase().includes("live") || 
+                      info.status.toLowerCase().includes("opt") ||
+                      info.status.toLowerCase().includes("trail");
 
   return (
     <div
-      onClick={() => nav(`/match/${match.matchId}`)}
-      className="group cursor-pointer bg-[#111827]/60 backdrop-blur-xl border border-white/5 rounded-3xl p-6 hover:border-blue-500/40 hover:bg-white/[0.04] transition-all duration-500 shadow-2xl"
+      onClick={() => nav(`/match/${info.matchId}`)}
+      className="group cursor-pointer bg-white border border-slate-200 rounded-3xl overflow-hidden hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-100 transition-all duration-300"
     >
-      <div className="flex justify-between items-center mb-6">
-        <span className="px-2 py-1 bg-blue-500/10 text-blue-400 text-[9px] font-black rounded uppercase border border-blue-500/20">
-          {match.matchFormat}
+      <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+          {info.matchFormat} • {info.seriesName}
         </span>
-        {isLive(match.status) && (
-          <span className="flex items-center gap-1.5 text-red-500 text-[10px] font-black uppercase tracking-widest">
-            <Zap size={12} className="fill-red-500" /> Live Now
-          </span>
+        {isLiveMatch && (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-50 rounded">
+             <Zap size={10} className="text-red-600 fill-red-600" />
+             <span className="text-red-600 text-[9px] font-black uppercase">Live</span>
+          </div>
         )}
       </div>
 
-      <div className="space-y-4 mb-6">
-        <ScoreRow name={t1} score={s1} />
-        <ScoreRow name={t2} score={s2} />
+      <div className="p-8 space-y-6">
+        <div className="flex justify-between items-center">
+          <span className="text-base font-bold text-slate-800">{info.team1.teamName}</span>
+          <span className="text-lg font-black text-slate-900">
+            {score?.team1Score?.inngs1 ? `${score.team1Score.inngs1.runs}/${score.team1Score.inngs1.wickets}` : "0/0"}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-base font-bold text-slate-800">{info.team2.teamName}</span>
+          <span className="text-lg font-black text-slate-400">
+             {score?.team2Score?.inngs1 ? `${score.team2Score.inngs1.runs}/${score.team2Score.inngs1.wickets}` : "Yet to Bat"}
+          </span>
+        </div>
       </div>
 
-      <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-        <p className="text-[10px] font-black text-emerald-500 uppercase italic truncate pr-4">
-          {match.status}
+      <div className="px-6 py-4 bg-slate-900 flex items-center justify-between group-hover:bg-blue-600 transition-colors">
+        <p className="text-[10px] font-bold text-white uppercase truncate">
+          {info.status}
         </p>
-        <ChevronRight size={16} className="text-slate-700 group-hover:text-blue-500 transition-colors" />
+        <ChevronRight size={16} className="text-white/40 group-hover:text-white transition-colors" />
       </div>
     </div>
   );
 };
 
-const ScoreRow = ({ name, score }) => (
-  <div className="flex justify-between items-center group-hover:translate-x-1 transition-transform">
-    <span className="text-sm font-black text-slate-300 group-hover:text-white">{name}</span>
-    <span className="text-sm font-mono font-black text-white bg-white/5 px-2 py-1 rounded">
-      {score ? `${score.runs}/${score.wickets}` : "0/0"}
-    </span>
-  </div>
-);
-
 /* =========================
    States
 ========================= */
 const LoadingState = () => (
-  <div className="h-screen flex flex-col items-center justify-center bg-[#080a0f]">
-    <Loader2 className="animate-spin text-blue-500 mb-4" size={40} />
-    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Syncing Arena Data</span>
+  <div className="h-screen flex flex-col items-center justify-center bg-[#f8fafc]">
+    <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
+    <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Initializing Arena Link</span>
   </div>
 );
 
 const ErrorState = ({ retry }) => (
-  <div className="h-screen flex flex-col items-center justify-center bg-[#080a0f]">
+  <div className="h-screen flex flex-col items-center justify-center bg-white">
     <AlertCircle className="text-red-500 mb-4" size={48} />
-    <h3 className="text-white font-black uppercase text-sm mb-6">Telemetry Connection Lost</h3>
+    <h3 className="text-slate-900 font-black uppercase text-sm mb-2">Sync Error</h3>
+    <p className="text-slate-400 text-xs mb-8">Unable to establish telemetry connection.</p>
     <button
       onClick={retry}
-      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-blue-600/20"
+      className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all"
     >
-      <RefreshCcw size={14} /> Reconnect
+      <RefreshCcw size={14} /> Reconnect Feed
     </button>
   </div>
 );
