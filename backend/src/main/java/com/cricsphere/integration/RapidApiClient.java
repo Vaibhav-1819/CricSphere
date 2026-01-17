@@ -11,6 +11,8 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Map;
@@ -62,11 +64,12 @@ public class RapidApiClient {
     public String fetch(String url, long ttlMillis) {
         rotateDayIfNeeded();
 
-        final String cacheKey = url;
+        final String cacheKey = buildCacheKey(url);
 
         // 1) Check Firestore cache
         FirestoreCacheService.CacheEntry cached = firestoreCacheService.get(cacheKey);
         if (cached != null && !firestoreCacheService.isExpired(cached)) {
+            log.info("✅ Cache HIT (fresh) | {}", url);
             return cached.getBody();
         }
 
@@ -77,6 +80,7 @@ public class RapidApiClient {
             // Double-check cache after lock
             cached = firestoreCacheService.get(cacheKey);
             if (cached != null && !firestoreCacheService.isExpired(cached)) {
+                log.info("✅ Cache HIT (fresh after lock) | {}", url);
                 return cached.getBody();
             }
 
@@ -168,6 +172,26 @@ public class RapidApiClient {
             currentDay = today;
             dailyCallCount.set(0);
             log.info("🔄 Daily RapidAPI quota reset for: {}", today);
+        }
+    }
+
+    private String buildCacheKey(String url) {
+        // Firestore doc IDs cannot safely contain '/', '?', '&', etc.
+        // So we store a stable hash key.
+        return "rapid:" + sha256(url);
+    }
+
+    private String sha256(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hash) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (Exception e) {
+            // fallback: very rare
+            return String.valueOf(input.hashCode());
         }
     }
 

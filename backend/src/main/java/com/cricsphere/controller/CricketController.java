@@ -18,9 +18,6 @@ public class CricketController {
 
     /* =========================================================
         MATCHES: LIVE / UPCOMING / RECENT
-       Strategy:
-       - Live: small TTL (fast updates)
-       - Upcoming/Recent: long TTL (low change)
     ========================================================= */
 
     @GetMapping("/live")
@@ -42,45 +39,72 @@ public class CricketController {
     }
 
     /* =========================================================
-        MATCH CENTER (mcenter)
+        MATCH CENTER (Clean + Frontend Friendly)
+        ✅ These routes match your React MatchPage / matchApi usage
     ========================================================= */
 
     @GetMapping("/match/{matchId}")
-    public ResponseEntity<String> getMatchInfo(@PathVariable String matchId) {
+    public ResponseEntity<String> getMatchOverview(@PathVariable String matchId) {
         log.info("GET /api/v1/cricket/match/{}", matchId);
-        return ResponseEntity.ok(cricketService.getMatchInfo(matchId));
+        return ResponseEntity.ok(cricketService.getMatchOverview(matchId));
     }
 
+    @GetMapping("/match/{matchId}/scorecard")
+    public ResponseEntity<String> getMatchScorecard(@PathVariable String matchId) {
+        log.info("GET /api/v1/cricket/match/{}/scorecard", matchId);
+        return ResponseEntity.ok(cricketService.getMatchScorecard(matchId));
+    }
+
+    @GetMapping("/match/{matchId}/commentary")
+    public ResponseEntity<String> getMatchCommentary(@PathVariable String matchId) {
+        log.info("GET /api/v1/cricket/match/{}/commentary", matchId);
+        return ResponseEntity.ok(cricketService.getMatchCommentary(matchId));
+    }
+
+    @GetMapping("/match/{matchId}/squads")
+    public ResponseEntity<String> getMatchSquads(@PathVariable String matchId) {
+        log.info("GET /api/v1/cricket/match/{}/squads", matchId);
+        return ResponseEntity.ok(cricketService.getMatchSquads(matchId));
+    }
+
+    @GetMapping("/match/{matchId}/overs")
+    public ResponseEntity<String> getMatchOvers(@PathVariable String matchId) {
+        log.info("GET /api/v1/cricket/match/{}/overs", matchId);
+        return ResponseEntity.ok(cricketService.getMatchOvers(matchId));
+    }
+
+    /* =========================================================
+        BACKWARD COMPATIBILITY ROUTES (Optional)
+        Keep these so older frontend calls won't break.
+        You can delete later safely.
+    ========================================================= */
+
     @GetMapping("/scorecard/{matchId}")
-    public ResponseEntity<String> getScorecard(@PathVariable String matchId) {
-        log.info("GET /api/v1/cricket/scorecard/{}", matchId);
-        return ResponseEntity.ok(cricketService.getScorecard(matchId));
+    public ResponseEntity<String> getScorecardLegacy(@PathVariable String matchId) {
+        log.info("GET /api/v1/cricket/scorecard/{} (legacy)", matchId);
+        return ResponseEntity.ok(cricketService.getMatchScorecard(matchId));
     }
 
     @GetMapping("/commentary/{matchId}")
-    public ResponseEntity<String> getCommentary(@PathVariable String matchId) {
-        log.info("GET /api/v1/cricket/commentary/{}", matchId);
-        return ResponseEntity.ok(cricketService.getCommentary(matchId));
+    public ResponseEntity<String> getCommentaryLegacy(@PathVariable String matchId) {
+        log.info("GET /api/v1/cricket/commentary/{} (legacy)", matchId);
+        return ResponseEntity.ok(cricketService.getMatchCommentary(matchId));
     }
 
     @GetMapping("/squads/{matchId}")
-    public ResponseEntity<String> getSquads(@PathVariable String matchId) {
-        log.info("GET /api/v1/cricket/squads/{}", matchId);
-        return ResponseEntity.ok(cricketService.getSquads(matchId));
+    public ResponseEntity<String> getSquadsLegacy(@PathVariable String matchId) {
+        log.info("GET /api/v1/cricket/squads/{} (legacy)", matchId);
+        return ResponseEntity.ok(cricketService.getMatchSquads(matchId));
     }
 
     @GetMapping("/overs/{matchId}")
-    public ResponseEntity<String> getOvers(@PathVariable String matchId) {
-        log.info("GET /api/v1/cricket/overs/{}", matchId);
-        return ResponseEntity.ok(cricketService.getOvers(matchId));
+    public ResponseEntity<String> getOversLegacy(@PathVariable String matchId) {
+        log.info("GET /api/v1/cricket/overs/{} (legacy)", matchId);
+        return ResponseEntity.ok(cricketService.getMatchOvers(matchId));
     }
 
     /* =========================================================
         RANKINGS (Weekly update)
-        Strategy: Cache for 7 days (weekly)
-        Params:
-          - format: t20 / odi / test
-          - isWomen: 0 / 1
     ========================================================= */
 
     @GetMapping("/rankings/international")
@@ -94,8 +118,6 @@ public class CricketController {
 
     /* =========================================================
         TEAMS
-        type:
-          - international | league | domestic | women | all
     ========================================================= */
 
     @GetMapping("/teams/{type}")
@@ -212,7 +234,6 @@ public class CricketController {
 
     /* =========================================================
         NEWS
-        Strategy: refresh every 10–30 minutes
     ========================================================= */
 
     @GetMapping("/news")

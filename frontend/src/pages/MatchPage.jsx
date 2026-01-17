@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import useFetch from "../hooks/useFetch";
 
@@ -6,8 +6,17 @@ import MatchHeader from "../components/match/MatchHeader";
 import LiveScore from "../components/match/LiveScore";
 import SquadsPanel from "../components/match/SquadsPanel";
 
-import { Loader2, MessageSquare, ListChecks, Users2, Activity, Info } from "lucide-react";
+import {
+  Loader2,
+  MessageSquare,
+  ListChecks,
+  Users2,
+  Activity,
+  Info,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+import { matchApi } from "../services/api";
 
 /* =========================
    Safe JSON Parse
@@ -21,16 +30,23 @@ function safeJsonParse(value) {
 }
 
 /* =========================
-   Commentary Extractor
+   Safe Extractors
 ========================= */
-function extractCommentary(match) {
+function extractMatchCore(parsed) {
+  if (!parsed) return null;
+  return parsed?.data || parsed?.matchDetails || parsed?.matchInfo || parsed;
+}
+
+function extractCommentary(raw) {
+  if (!raw) return [];
+
   const comm =
-    match?.commentary ||
-    match?.comm ||
-    match?.commentaryList ||
-    match?.ballByBall ||
-    match?.commentaryData ||
-    match?.matchCommentary ||
+    raw?.commentaryList ||
+    raw?.commLines ||
+    raw?.commentary ||
+    raw?.data?.commentaryList ||
+    raw?.data?.commLines ||
+    raw?.data?.commentary ||
     [];
 
   if (Array.isArray(comm)) return comm;
@@ -42,15 +58,17 @@ function extractCommentary(match) {
   return [];
 }
 
-/* =========================
-   Scorecard Extractor
-========================= */
-function extractScorecard(match) {
+function extractScorecard(raw) {
+  if (!raw) return null;
+
   return (
-    match?.scorecard ||
-    match?.matchScore ||
-    match?.scoreCard ||
-    match?.innings ||
+    raw?.scorecard ||
+    raw?.scoreCard ||
+    raw?.matchScorecard ||
+    raw?.innings ||
+    raw?.data?.scorecard ||
+    raw?.data?.scoreCard ||
+    raw?.data?.matchScorecard ||
     null
   );
 }
@@ -62,25 +80,92 @@ export default function MatchPage() {
   const { matchId } = useParams();
   const [activeTab, setActiveTab] = useState("commentary");
 
+  // 1) Overview loads first
   const { data, loading, error } = useFetch(`/api/v1/cricket/match/${matchId}`);
 
-  const parsed = useMemo(() => {
+  const parsedOverview = useMemo(() => {
     if (!data) return null;
     return typeof data === "string" ? safeJsonParse(data) : data;
   }, [data]);
 
-  const match = useMemo(() => {
-    if (!parsed) return null;
-    return parsed?.data || parsed?.matchDetails || parsed?.matchInfo || parsed;
-  }, [parsed]);
-
+  const match = useMemo(() => extractMatchCore(parsedOverview), [parsedOverview]);
   const info = match?.matchInfo || match;
 
   const team1Name = info?.team1?.teamName || "Team 1";
   const team2Name = info?.team2?.teamName || "Team 2";
 
-  const commentaryList = useMemo(() => extractCommentary(match), [match]);
-  const scorecard = useMemo(() => extractScorecard(match), [match]);
+  // 2) Lazy tab data
+  const [commentaryData, setCommentaryData] = useState(null);
+  const [scorecardData, setScorecardData] = useState(null);
+  const [squadsData, setSquadsData] = useState(null);
+
+  const [tabLoading, setTabLoading] = useState(false);
+
+  // Reset when match changes
+  useEffect(() => {
+    setCommentaryData(null);
+    setScorecardData(null);
+    setSquadsData(null);
+  }, [matchId]);
+
+  const loadCommentary = useCallback(async () => {
+    if (commentaryData) return;
+    setTabLoading(true);
+    try {
+      const res = await matchApi.getCommentary(matchId);
+      setCommentaryData(res.data || null);
+    } catch (e) {
+      console.error("Commentary fetch failed:", e);
+      setCommentaryData(null);
+    } finally {
+      setTabLoading(false);
+    }
+  }, [matchId, commentaryData]);
+
+  const loadScorecard = useCallback(async () => {
+    if (scorecardData) return;
+    setTabLoading(true);
+    try {
+      const res = await matchApi.getScorecard(matchId);
+      setScorecardData(res.data || null);
+    } catch (e) {
+      console.error("Scorecard fetch failed:", e);
+      setScorecardData(null);
+    } finally {
+      setTabLoading(false);
+    }
+  }, [matchId, scorecardData]);
+
+  const loadSquads = useCallback(async () => {
+    if (squadsData) return;
+    setTabLoading(true);
+    try {
+      const res = await matchApi.getSquads(matchId);
+      setSquadsData(res.data || null);
+    } catch (e) {
+      console.error("Squads fetch failed:", e);
+      setSquadsData(null);
+    } finally {
+      setTabLoading(false);
+    }
+  }, [matchId, squadsData]);
+
+  // Lazy load when tab changes
+  useEffect(() => {
+    if (activeTab === "commentary") loadCommentary();
+    if (activeTab === "scorecard") loadScorecard();
+    if (activeTab === "squads") loadSquads();
+  }, [activeTab, loadCommentary, loadScorecard, loadSquads]);
+
+  const commentaryList = useMemo(
+    () => extractCommentary(commentaryData),
+    [commentaryData]
+  );
+
+  const scorecard = useMemo(
+    () => extractScorecard(scorecardData),
+    [scorecardData]
+  );
 
   const tabs = [
     { id: "commentary", label: "Commentary", icon: MessageSquare },
@@ -119,7 +204,7 @@ export default function MatchPage() {
         <LiveScore match={match} />
 
         {/* Tabs */}
-        <div className="mt-6 mb-6 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0b0f16] p-1 shadow-sm">
+        <div className="mt-6 mb-4 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0b0f16] p-1 shadow-sm">
           <div className="grid grid-cols-3 gap-1">
             {tabs.map((tab) => (
               <button
@@ -137,6 +222,16 @@ export default function MatchPage() {
             ))}
           </div>
         </div>
+
+        {/* Tab loading */}
+        {tabLoading && (
+          <div className="mb-6 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0b0f16] p-4 flex items-center gap-3">
+            <Loader2 className="animate-spin text-blue-500" size={18} />
+            <p className="text-[12px] font-semibold text-slate-500">
+              Loading {activeTab}...
+            </p>
+          </div>
+        )}
 
         {/* Content */}
         <AnimatePresence mode="wait">
@@ -170,8 +265,7 @@ export default function MatchPage() {
 
                     <div className="divide-y divide-black/10 dark:divide-white/10">
                       {commentaryList.slice(0, 30).map((c, idx) => {
-                        const over =
-                          c?.overNumber || c?.over || c?.ball || "•";
+                        const over = c?.overNumber || c?.over || c?.ball || "•";
                         const text =
                           c?.commText ||
                           c?.text ||
@@ -223,7 +317,7 @@ export default function MatchPage() {
                       Scorecard data not available
                     </p>
                     <p className="text-[12px] mt-2">
-                      Full innings tables will be added soon.
+                      This match might not have full innings tables yet.
                     </p>
                   </div>
                 ) : (
@@ -235,7 +329,9 @@ export default function MatchPage() {
             )}
 
             {/* Squads */}
-            {activeTab === "squads" && <SquadsPanel match={match} />}
+            {activeTab === "squads" && (
+              <SquadsPanel match={squadsData || match} />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

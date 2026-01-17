@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -9,96 +9,146 @@ import {
   Shield,
   Users,
   ChevronRight,
+  Globe,
+  Trophy,
+  Hash,
 } from "lucide-react";
 import axios from "../services/api";
 
-/* ---------------- 🧠 NORMALIZER ---------------- */
-const normalizeTeam = (t) => {
-  const id = t.teamId || t.id;
-  const name = t.teamName || t.name || "Unknown Team";
-  const code = t.teamSName || t.code || "";
+/* ---------------- 🧠 HELPERS ---------------- */
+const extractList = (data) => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.list)) return data.list;
+  if (Array.isArray(data.teams)) return data.teams;
+  return [];
+};
 
-  // Cricbuzz doesn’t give official logo URLs directly in most cases
-  // so we fallback to a generated badge placeholder.
+const normalizeTeam = (t) => {
+  const id = t.teamId || t.id || t.teamID;
+  const name = t.teamName || t.name || "Unknown Team";
+  const code = t.teamSName || t.shortName || t.code || "";
+
   const logo = `https://ui-avatars.com/api/?name=${encodeURIComponent(
     code || name
   )}&background=0f172a&color=ffffff&size=256&bold=true`;
 
   return {
-    id: String(id),
+    id: String(id || name),
     name,
     code,
     logo,
-
-    // Not provided by Cricbuzz teams list → safe defaults
-    captain: "TBA",
-    trophies: 0,
-    avgRank: 99,
-    winRate: 0,
   };
 };
 
 export default function Teams() {
-  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [teamsData, setTeamsData] = useState({
+    international: [],
+    league: [],
+    domestic: [],
+    women: [],
+  });
+
+  const [activeCategory, setActiveCategory] = useState("international");
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("rank");
+  const [sortBy, setSortBy] = useState("name");
 
   const [compareMode, setCompareMode] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
 
+  const categoryTabs = useMemo(
+    () => [
+      { key: "international", label: "International", icon: Globe },
+      { key: "league", label: "League", icon: Trophy },
+      { key: "domestic", label: "Domestic", icon: Hash },
+      { key: "women", label: "Women", icon: Users },
+    ],
+    []
+  );
+
   useEffect(() => {
     setLoading(true);
 
     axios
-      .get("/api/v1/cricket/teams/international")
+      .get("/api/v1/cricket/teams/all")
       .then((res) => {
-        // Cricbuzz structure usually contains "list"
-        const rawList = res.data?.list || res.data?.teams || res.data || [];
+        const data = res.data || {};
 
-        const normalized = Array.isArray(rawList)
-          ? rawList.map(normalizeTeam)
-          : [];
+        const international = extractList(data.international).map(normalizeTeam);
+        const league = extractList(data.league).map(normalizeTeam);
+        const domestic = extractList(data.domestic).map(normalizeTeam);
+        const women = extractList(data.women).map(normalizeTeam);
 
-        setTeams(normalized);
+        setTeamsData({
+          international,
+          league,
+          domestic,
+          women,
+        });
+
+        const firstNonEmpty =
+          (international.length > 0 && "international") ||
+          (league.length > 0 && "league") ||
+          (domestic.length > 0 && "domestic") ||
+          (women.length > 0 && "women") ||
+          "international";
+
+        setActiveCategory(firstNonEmpty);
       })
       .catch((err) => {
         console.error("Error fetching teams", err);
-        setTeams([]);
+        setTeamsData({
+          international: [],
+          league: [],
+          domestic: [],
+          women: [],
+        });
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const sortedTeams = useMemo(() => {
-    if (!Array.isArray(teams)) return [];
+  useEffect(() => {
+    setSelectedTeams([]);
+    setShowCompareModal(false);
+  }, [activeCategory]);
 
-    let list = [...teams].filter((team) => {
-      const n = team.name?.toLowerCase() || "";
-      const c = team.code?.toLowerCase() || "";
-      const q = searchTerm.toLowerCase();
-      return n.includes(q) || c.includes(q);
+  const categoryTeams = useMemo(() => {
+    return teamsData?.[activeCategory] || [];
+  }, [teamsData, activeCategory]);
+
+  const filteredTeams = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+
+    let list = [...categoryTeams].filter((team) => {
+      const n = (team.name || "").toLowerCase();
+      const c = (team.code || "").toLowerCase();
+      return !q || n.includes(q) || c.includes(q);
     });
 
-    if (sortBy === "trophies") {
-      list.sort((a, b) => (b.trophies || 0) - (a.trophies || 0));
-    } else if (sortBy === "rank") {
-      list.sort((a, b) => (a.avgRank || 99) - (b.avgRank || 99));
-    } else {
+    if (sortBy === "name") {
       list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (sortBy === "code") {
+      list.sort((a, b) => (a.code || "").localeCompare(b.code || ""));
     }
 
     return list;
-  }, [teams, searchTerm, sortBy]);
+  }, [categoryTeams, searchTerm, sortBy]);
 
   const toggleTeamSelection = (id) => {
     if (selectedTeams.includes(id)) {
       setSelectedTeams(selectedTeams.filter((t) => t !== id));
-    } else if (selectedTeams.length < 2) {
-      setSelectedTeams([...selectedTeams, id]);
+      return;
     }
+    if (selectedTeams.length >= 2) return;
+    setSelectedTeams([...selectedTeams, id]);
   };
+
+  const activeLabel =
+    categoryTabs.find((t) => t.key === activeCategory)?.label || "Teams";
 
   if (loading)
     return (
@@ -121,16 +171,18 @@ export default function Teams() {
                 <Shield size={18} />
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                ICC Global Directory
+                Team Directory
               </span>
             </div>
 
             <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-none">
-              World <span className="text-blue-600 dark:text-blue-500">Teams</span>
+              {activeLabel}{" "}
+              <span className="text-blue-600 dark:text-blue-500">Teams</span>
             </h2>
 
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-xl">
-              Browse international teams, filter quickly, and compare side-by-side.
+              Browse teams by category, search instantly, and compare two teams
+              side-by-side.
             </p>
           </div>
 
@@ -139,7 +191,8 @@ export default function Teams() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 dark:text-slate-500 dark:group-focus-within:text-blue-500 transition-colors" />
               <input
                 type="text"
-                placeholder="Search teams..."
+                value={searchTerm}
+                placeholder={`Search ${activeLabel.toLowerCase()} teams...`}
                 className="w-full pl-11 pr-4 py-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#080a0f] focus:ring-2 focus:ring-blue-500/40 outline-none transition-all text-sm"
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -149,6 +202,7 @@ export default function Teams() {
               onClick={() => {
                 setCompareMode(!compareMode);
                 setSelectedTeams([]);
+                setShowCompareModal(false);
               }}
               className={`px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 ${
                 compareMode
@@ -162,21 +216,71 @@ export default function Teams() {
           </div>
         </header>
 
+        {/* 🔵 CATEGORY TABS */}
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          {categoryTabs.map((tab) => {
+            const Icon = tab.icon;
+            const count = teamsData?.[tab.key]?.length || 0;
+            const active = activeCategory === tab.key;
+
+            if (count === 0) return null;
+
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveCategory(tab.key)}
+                className={`px-5 py-2.5 rounded-2xl border transition-all flex items-center gap-2 ${
+                  active
+                    ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20"
+                    : "bg-white dark:bg-[#080a0f] border-black/10 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/10"
+                }`}
+              >
+                <Icon size={16} />
+                <span className="text-[10px] font-black uppercase tracking-widest">
+                  {tab.label}
+                </span>
+                <span
+                  className={`ml-1 text-[10px] font-black px-2 py-1 rounded-xl ${
+                    active
+                      ? "bg-white/15 text-white"
+                      : "bg-black/5 dark:bg-white/10 text-slate-500 dark:text-slate-400"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* 🔵 SORT BAR */}
-        <div className="flex items-center gap-2 bg-white dark:bg-[#080a0f] p-1.5 rounded-2xl border border-black/10 dark:border-white/10 w-fit mb-8 shadow-sm">
-          {["rank", "trophies", "name"].map((type) => (
-            <button
-              key={type}
-              onClick={() => setSortBy(type)}
-              className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
-                sortBy === type
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              {type}
-            </button>
-          ))}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
+          <div className="flex items-center gap-2 bg-white dark:bg-[#080a0f] p-1.5 rounded-2xl border border-black/10 dark:border-white/10 w-fit shadow-sm">
+            {[
+              { key: "name", label: "Name" },
+              { key: "code", label: "Code" },
+            ].map((type) => (
+              <button
+                key={type.key}
+                onClick={() => setSortBy(type.key)}
+                className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
+                  sortBy === type.key
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                {type.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
+            Showing{" "}
+            <span className="text-blue-600 dark:text-blue-500">
+              {filteredTeams.length}
+            </span>{" "}
+            teams
+          </div>
         </div>
 
         {/* 🟠 TEAM GRID */}
@@ -185,7 +289,7 @@ export default function Teams() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
         >
           <AnimatePresence mode="popLayout">
-            {sortedTeams.map((team) => (
+            {filteredTeams.map((team) => (
               <TeamCard
                 key={team.id}
                 team={team}
@@ -196,6 +300,19 @@ export default function Teams() {
             ))}
           </AnimatePresence>
         </motion.div>
+
+        {/* 🟣 EMPTY STATE */}
+        {filteredTeams.length === 0 && (
+          <div className="mt-16 text-center">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              No teams found for{" "}
+              <span className="font-bold text-slate-800 dark:text-slate-200">
+                “{searchTerm}”
+              </span>
+              .
+            </p>
+          </div>
+        )}
 
         {/* 🟣 COMPARISON FLOATING BAR */}
         <AnimatePresence>
@@ -234,6 +351,7 @@ export default function Teams() {
                   onClick={() => {
                     setCompareMode(false);
                     setSelectedTeams([]);
+                    setShowCompareModal(false);
                   }}
                   className="ml-auto p-2 rounded-xl text-slate-500 hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                 >
@@ -244,11 +362,12 @@ export default function Teams() {
           )}
         </AnimatePresence>
 
+        {/* 🟣 COMPARE MODAL */}
         <AnimatePresence>
           {showCompareModal && (
             <ComparisonModal
-              team1={teams.find((t) => t.id === selectedTeams[0])}
-              team2={teams.find((t) => t.id === selectedTeams[1])}
+              team1={categoryTeams.find((t) => t.id === selectedTeams[0])}
+              team2={categoryTeams.find((t) => t.id === selectedTeams[1])}
               onClose={() => setShowCompareModal(false)}
             />
           )}
@@ -305,7 +424,7 @@ const TeamCard = ({ team, compareMode, isSelected, onSelect }) => (
 
         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mt-1">
           <Users size={12} className="text-blue-600 dark:text-blue-500" />
-          {team.captain || "TBA"}
+          {team.code ? team.code : "TEAM"}
         </p>
       </div>
     </div>
@@ -313,9 +432,11 @@ const TeamCard = ({ team, compareMode, isSelected, onSelect }) => (
     <div className="flex justify-between items-center pt-5 border-t border-black/10 dark:border-white/10">
       <div className="flex flex-col">
         <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-          Titles
+          Team ID
         </span>
-        <span className="font-black text-amber-500">🏆 {team.trophies || 0}</span>
+        <span className="font-black text-slate-800 dark:text-slate-200 text-sm">
+          {team.id}
+        </span>
       </div>
 
       {!compareMode && (
@@ -344,7 +465,7 @@ const ComparisonModal = ({ team1, team2, onClose }) => {
         initial={{ scale: 0.95, y: 16 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 16 }}
-        className="bg-white dark:bg-[#080a0f] border border-black/10 dark:border-white/10 p-8 md:p-10 rounded-[2.5rem] max-w-4xl w-full shadow-2xl relative overflow-hidden"
+        className="bg-white dark:bg-[#080a0f] border border-black/10 dark:border-white/10 p-8 md:p-10 rounded-[2.5rem] max-w-3xl w-full shadow-2xl relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-emerald-500" />
 
@@ -356,47 +477,13 @@ const ComparisonModal = ({ team1, team2, onClose }) => {
         </button>
 
         <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-10 text-center">
-          Head-to-Head <span className="text-blue-600 dark:text-blue-500">Analysis</span>
+          Team{" "}
+          <span className="text-blue-600 dark:text-blue-500">Comparison</span>
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-8">
-          <div className="text-center order-2 md:order-1">
-            <img
-              src={team1.logo}
-              alt={team1.name}
-              className="h-24 w-24 mx-auto mb-4 rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#111827] p-3 shadow-sm"
-            />
-            <p className="text-lg font-black">{team1.name}</p>
-          </div>
-
-          <div className="space-y-6 order-1 md:order-2">
-            <StatCompare
-              label="Average Rank"
-              val1={team1.avgRank}
-              val2={team2.avgRank}
-              inverse
-            />
-            <StatCompare
-              label="Total Titles"
-              val1={team1.trophies}
-              val2={team2.trophies}
-            />
-            <StatCompare
-              label="Win Rate"
-              val1={team1.winRate}
-              val2={team2.winRate}
-              suffix="%"
-            />
-          </div>
-
-          <div className="text-center order-3">
-            <img
-              src={team2.logo}
-              alt={team2.name}
-              className="h-24 w-24 mx-auto mb-4 rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#111827] p-3 shadow-sm"
-            />
-            <p className="text-lg font-black">{team2.name}</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CompareCard team={team1} />
+          <CompareCard team={team2} />
         </div>
 
         <div className="mt-10 pt-7 border-t border-black/10 dark:border-white/10 text-center">
@@ -412,50 +499,33 @@ const ComparisonModal = ({ team1, team2, onClose }) => {
   );
 };
 
-const StatCompare = ({ label, val1, val2, inverse = false, suffix = "" }) => {
-  const v1 = parseFloat(val1) || 0;
-  const v2 = parseFloat(val2) || 0;
-
-  const win1 = inverse ? v1 < v2 : v1 > v2;
-  const win2 = inverse ? v2 < v1 : v2 > v1;
-
+const CompareCard = ({ team }) => {
   return (
-    <div className="text-center">
-      <p className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-2 tracking-widest">
-        {label}
+    <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-slate-50 dark:bg-black/20 p-6 text-center">
+      <img
+        src={team.logo}
+        alt={team.name}
+        className="h-20 w-20 mx-auto mb-4 rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#111827] p-3 shadow-sm"
+      />
+      <p className="text-lg font-black">{team.name}</p>
+      <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 mt-1">
+        {team.code || "TEAM"}
       </p>
 
-      <div className="flex justify-between items-center bg-slate-50 dark:bg-black/20 p-3 rounded-2xl border border-black/10 dark:border-white/10">
-        <span
-          className={`font-black ${
-            win1
-              ? "text-blue-600 dark:text-blue-500 text-lg"
-              : "text-slate-500 dark:text-slate-500"
-          }`}
-        >
-          {val1}
-          {suffix}
-        </span>
-
-        <div className="h-1 flex-1 mx-4 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden flex">
-          <div
-            className={`h-full transition-all duration-700 ${
-              win1 ? "bg-blue-600 dark:bg-blue-500 w-full" : "bg-slate-300 dark:bg-slate-700 w-1/3"
-            }`}
-          />
-        </div>
-
-        <span
-          className={`font-black ${
-            win2
-              ? "text-blue-600 dark:text-blue-500 text-lg"
-              : "text-slate-500 dark:text-slate-500"
-          }`}
-        >
-          {val2}
-          {suffix}
-        </span>
+      <div className="mt-5 grid grid-cols-1 gap-2 text-left">
+        <MiniStat label="Team ID" value={team.id} />
       </div>
     </div>
   );
 };
+
+const MiniStat = ({ label, value }) => (
+  <div className="flex items-center justify-between rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#080a0f] px-4 py-3">
+    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+      {label}
+    </span>
+    <span className="text-[12px] font-extrabold text-slate-900 dark:text-white">
+      {value || "-"}
+    </span>
+  </div>
+);

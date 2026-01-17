@@ -10,8 +10,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -31,29 +31,36 @@ public class CricketService {
     ========================================================= */
     private static final String RAPID_BASE = "https://cricbuzz-cricket2.p.rapidapi.com";
 
+    /* ===================== HOME ===================== */
+    private static final String HOME_INDEX = RAPID_BASE + "/home/v1/index";
+
     /* ===================== MATCHES ===================== */
     private static final String LIVE     = RAPID_BASE + "/matches/v1/live";
     private static final String UPCOMING = RAPID_BASE + "/matches/v1/upcoming";
     private static final String RECENT   = RAPID_BASE + "/matches/v1/recent";
 
     /* ===================== MATCH CENTER ===================== */
-    private static final String MATCH_INFO  = RAPID_BASE + "/mcenter/v1/%s";
-    private static final String SCORECARD   = RAPID_BASE + "/mcenter/v1/%s/scard";
-    private static final String COMMENTARY  = RAPID_BASE + "/mcenter/v1/%s/comm";
-    private static final String SQUADS      = RAPID_BASE + "/mcenter/v1/%s/teams";   // ✅ FIXED
-    private static final String OVERS       = RAPID_BASE + "/mcenter/v1/%s/overs";
+    private static final String MATCH_INFO   = RAPID_BASE + "/mcenter/v1/%s";
+    private static final String SCORECARD    = RAPID_BASE + "/mcenter/v1/%s/scard";
+    private static final String COMMENTARY   = RAPID_BASE + "/mcenter/v1/%s/comm";
+    private static final String H_COMMENTARY = RAPID_BASE + "/mcenter/v1/%s/hcomm";
+    private static final String SQUADS       = RAPID_BASE + "/mcenter/v1/%s/teams";
+    private static final String OVERS        = RAPID_BASE + "/mcenter/v1/%s/overs";
+    private static final String HIGHLIGHTS   = RAPID_BASE + "/mcenter/v1/%s/hlights";
+    private static final String LEANBACK     = RAPID_BASE + "/mcenter/v1/%s/leanback";
+    private static final String H_LEANBACK   = RAPID_BASE + "/mcenter/v1/%s/hleanback";
 
     /* ===================== NEWS ===================== */
     private static final String NEWS        = RAPID_BASE + "/news/v1/index";
     private static final String NEWS_DETAIL = RAPID_BASE + "/news/v1/detail/%s";
 
     /* ===================== TEAMS ===================== */
-    private static final String TEAMS_LIST = RAPID_BASE + "/teams/v1/%s";
-    private static final String TEAM_SCHEDULE = RAPID_BASE + "/teams/v1/%s/schedule";
-    private static final String TEAM_RESULTS  = RAPID_BASE + "/teams/v1/%s/results";
-    private static final String TEAM_PLAYERS  = RAPID_BASE + "/teams/v1/%s/players";
-    private static final String TEAM_STATS    = RAPID_BASE + "/stats/v1/team/%s";
-    private static final String TEAM_NEWS     = RAPID_BASE + "/news/v1/team/%s";
+    private static final String TEAMS_LIST     = RAPID_BASE + "/teams/v1/%s";
+    private static final String TEAM_SCHEDULE  = RAPID_BASE + "/teams/v1/%s/schedule";
+    private static final String TEAM_RESULTS   = RAPID_BASE + "/teams/v1/%s/results";
+    private static final String TEAM_PLAYERS   = RAPID_BASE + "/teams/v1/%s/players";
+    private static final String TEAM_STATS     = RAPID_BASE + "/stats/v1/team/%s";
+    private static final String TEAM_NEWS      = RAPID_BASE + "/news/v1/team/%s";
 
     /* ===================== PLAYERS ===================== */
     private static final String PLAYER_INFO    = RAPID_BASE + "/stats/v1/player/%s";
@@ -62,7 +69,7 @@ public class CricketService {
     private static final String PLAYER_CAREER  = RAPID_BASE + "/stats/v1/player/%s/career";
 
     /* ===================== VENUES ===================== */
-    private static final String VENUE_INFO    = RAPID_BASE + "/venues/v1/%s";         // ✅ FIXED
+    private static final String VENUE_INFO    = RAPID_BASE + "/venues/v1/%s";
     private static final String VENUE_MATCHES = RAPID_BASE + "/venues/v1/%s/matches";
     private static final String VENUE_STATS   = RAPID_BASE + "/stats/v1/venue/%s";
 
@@ -70,17 +77,9 @@ public class CricketService {
     private static final String RANKINGS_TEAMS = RAPID_BASE + "/stats/v1/rankings/teams";
 
     /* =========================================================
-        TTL Strategy (Optimized for 100 calls/day)
-        - Live data: small TTL
-        - Static data: long TTL
-        - Rankings: weekly TTL
+        TTL Strategy (Optimized for < 100 calls/day)
     ========================================================= */
-    private static final long TTL_15_SEC  = 15 * 1000L;
-    private static final long TTL_30_SEC  = 30 * 1000L;
-    private static final long TTL_2_MIN   = 2 * 60 * 1000L;
     private static final long TTL_10_MIN  = 10 * 60 * 1000L;
-    private static final long TTL_30_MIN  = 30 * 60 * 1000L;
-    private static final long TTL_6_HOUR  = 6 * 60 * 60 * 1000L;
     private static final long TTL_24_HOUR = 24 * 60 * 60 * 1000L;
     private static final long TTL_7_DAYS  = 7L * 24 * 60 * 60 * 1000L;
 
@@ -105,56 +104,93 @@ public class CricketService {
     }
 
     /* =========================================================
+        HOME
+    ========================================================= */
+    public String getHomeIndex() {
+        return rapidApi.fetch(HOME_INDEX, TTL_24_HOUR);
+    }
+
+    /* =========================================================
         MATCHES
     ========================================================= */
-
     public String getLiveMatches() {
-        // Live changes frequently → small TTL
-        return rapidApi.fetch(LIVE, TTL_30_SEC);
+        return rapidApi.fetch(LIVE, TTL_10_MIN);
     }
 
     public String getUpcomingMatches() {
-        // Upcoming doesn't change very often
-        return rapidApi.fetch(UPCOMING, TTL_6_HOUR);
+        return rapidApi.fetch(UPCOMING, TTL_24_HOUR);
     }
 
     public String getRecentMatches() {
-        // Recent changes slowly
-        return rapidApi.fetch(RECENT, TTL_6_HOUR);
+        return rapidApi.fetch(RECENT, TTL_24_HOUR);
     }
 
     /* =========================================================
-        MATCH CENTER
+        MATCH CENTER (User-friendly endpoints)
     ========================================================= */
-
-    public String getMatchInfo(String matchId) {
+    public String getMatchOverview(String matchId) {
         return rapidApi.fetch(String.format(MATCH_INFO, matchId), TTL_10_MIN);
     }
 
-    public String getScorecard(String matchId) {
-        return rapidApi.fetch(String.format(SCORECARD, matchId), TTL_2_MIN);
+    public String getMatchScorecard(String matchId) {
+        return rapidApi.fetch(String.format(SCORECARD, matchId), TTL_10_MIN);
     }
 
-    public String getCommentary(String matchId) {
-        return rapidApi.fetch(String.format(COMMENTARY, matchId), TTL_30_SEC);
+    public String getMatchCommentary(String matchId) {
+        return rapidApi.fetch(String.format(COMMENTARY, matchId), TTL_10_MIN);
     }
 
-    public String getSquads(String matchId) {
-        // squads rarely change
+    public String getMatchHCommentary(String matchId) {
+        return rapidApi.fetch(String.format(H_COMMENTARY, matchId), TTL_10_MIN);
+    }
+
+    public String getMatchSquads(String matchId) {
         return rapidApi.fetch(String.format(SQUADS, matchId), TTL_24_HOUR);
     }
 
-    public String getOvers(String matchId) {
-        return rapidApi.fetch(String.format(OVERS, matchId), TTL_15_SEC);
+    public String getMatchOvers(String matchId) {
+        return rapidApi.fetch(String.format(OVERS, matchId), TTL_10_MIN);
+    }
+
+    public String getMatchHighlights(String matchId) {
+        return rapidApi.fetch(String.format(HIGHLIGHTS, matchId), TTL_24_HOUR);
+    }
+
+    public String getMatchLeanback(String matchId) {
+        return rapidApi.fetch(String.format(LEANBACK, matchId), TTL_24_HOUR);
+    }
+
+    public String getMatchHLeanback(String matchId) {
+        return rapidApi.fetch(String.format(H_LEANBACK, matchId), TTL_24_HOUR);
     }
 
     /* =========================================================
-        RANKINGS (Weekly update)
-        - ICC updates weekly, so cache for 7 days
+        Backward compatibility (old names)
     ========================================================= */
+    public String getMatchInfo(String matchId) {
+        return getMatchOverview(matchId);
+    }
 
+    public String getScorecard(String matchId) {
+        return getMatchScorecard(matchId);
+    }
+
+    public String getCommentary(String matchId) {
+        return getMatchCommentary(matchId);
+    }
+
+    public String getSquads(String matchId) {
+        return getMatchSquads(matchId);
+    }
+
+    public String getOvers(String matchId) {
+        return getMatchOvers(matchId);
+    }
+
+    /* =========================================================
+        RANKINGS (Weekly)
+    ========================================================= */
     public String getRankings(String format, String isWomen) {
-        // ✅ FIXED param name: format (not formatType)
         String url = String.format("%s?formatType=%s&isWomen=%s", RANKINGS_TEAMS, format, isWomen);
         log.info("📊 Rankings URL: {}", url);
         return rapidApi.fetch(url, TTL_7_DAYS);
@@ -162,23 +198,18 @@ public class CricketService {
 
     /* =========================================================
         TEAMS
-        - type: international | league | domestic | women | all
-        - "all" aggregates but still cached 24 hours
     ========================================================= */
-
     public String getTeams(String type) {
         if (type == null || type.isBlank()) type = "all";
 
         type = type.trim().toLowerCase();
 
         if ("all".equals(type)) {
-            // Fetch 4 endpoints (but cached for 24h so only 4 calls/day max)
-            String international = rapidApi.fetch(String.format(TEAMS_LIST, "international"), TTL_24_HOUR);
-            String league        = rapidApi.fetch(String.format(TEAMS_LIST, "league"), TTL_24_HOUR);
-            String domestic      = rapidApi.fetch(String.format(TEAMS_LIST, "domestic"), TTL_24_HOUR);
-            String women         = rapidApi.fetch(String.format(TEAMS_LIST, "women"), TTL_24_HOUR);
+            String international = rapidApi.fetch(String.format(TEAMS_LIST, "international"), TTL_7_DAYS);
+            String league        = rapidApi.fetch(String.format(TEAMS_LIST, "league"), TTL_7_DAYS);
+            String domestic      = rapidApi.fetch(String.format(TEAMS_LIST, "domestic"), TTL_7_DAYS);
+            String women         = rapidApi.fetch(String.format(TEAMS_LIST, "women"), TTL_7_DAYS);
 
-            // Combine safely as JSON object (frontend can pick needed list)
             return String.format(
                     "{\"international\":%s,\"league\":%s,\"domestic\":%s,\"women\":%s}",
                     safeJson(international),
@@ -188,72 +219,68 @@ public class CricketService {
             );
         }
 
-        // Direct single endpoint
-        return rapidApi.fetch(String.format(TEAMS_LIST, type), TTL_24_HOUR);
+        return rapidApi.fetch(String.format(TEAMS_LIST, type), TTL_7_DAYS);
     }
 
     public String getTeamSchedule(String teamId) {
-        return rapidApi.fetch(String.format(TEAM_SCHEDULE, teamId), TTL_6_HOUR);
+        return rapidApi.fetch(String.format(TEAM_SCHEDULE, teamId), TTL_24_HOUR);
     }
 
     public String getTeamResults(String teamId) {
-        return rapidApi.fetch(String.format(TEAM_RESULTS, teamId), TTL_6_HOUR);
+        return rapidApi.fetch(String.format(TEAM_RESULTS, teamId), TTL_24_HOUR);
     }
 
     public String getTeamPlayers(String teamId) {
-        return rapidApi.fetch(String.format(TEAM_PLAYERS, teamId), TTL_24_HOUR);
+        return rapidApi.fetch(String.format(TEAM_PLAYERS, teamId), TTL_7_DAYS);
     }
 
     public String getTeamStats(String teamId) {
-        return rapidApi.fetch(String.format(TEAM_STATS, teamId), TTL_24_HOUR);
+        return rapidApi.fetch(String.format(TEAM_STATS, teamId), TTL_7_DAYS);
     }
 
     public String getTeamNews(String teamId) {
-        return rapidApi.fetch(String.format(TEAM_NEWS, teamId), TTL_30_MIN);
+        return rapidApi.fetch(String.format(TEAM_NEWS, teamId), TTL_24_HOUR);
     }
 
     /* =========================================================
         PLAYERS
     ========================================================= */
-
     public String getPlayerInfo(String playerId) {
-        return rapidApi.fetch(String.format(PLAYER_INFO, playerId), TTL_24_HOUR);
+        return rapidApi.fetch(String.format(PLAYER_INFO, playerId), TTL_7_DAYS);
     }
 
     public String getPlayerBatting(String playerId) {
-        return rapidApi.fetch(String.format(PLAYER_BATTING, playerId), TTL_24_HOUR);
+        return rapidApi.fetch(String.format(PLAYER_BATTING, playerId), TTL_7_DAYS);
     }
 
     public String getPlayerBowling(String playerId) {
-        return rapidApi.fetch(String.format(PLAYER_BOWLING, playerId), TTL_24_HOUR);
+        return rapidApi.fetch(String.format(PLAYER_BOWLING, playerId), TTL_7_DAYS);
     }
 
     public String getPlayerCareer(String playerId) {
-        return rapidApi.fetch(String.format(PLAYER_CAREER, playerId), TTL_24_HOUR);
+        return rapidApi.fetch(String.format(PLAYER_CAREER, playerId), TTL_7_DAYS);
     }
 
     /* =========================================================
         VENUES
     ========================================================= */
-
     public String getVenueInfo(String venueId) {
-        return rapidApi.fetch(String.format(VENUE_INFO, venueId), TTL_24_HOUR);
+        return rapidApi.fetch(String.format(VENUE_INFO, venueId), TTL_7_DAYS);
     }
 
     public String getVenueMatches(String venueId) {
-        return rapidApi.fetch(String.format(VENUE_MATCHES, venueId), TTL_6_HOUR);
+        return rapidApi.fetch(String.format(VENUE_MATCHES, venueId), TTL_24_HOUR);
     }
 
     public String getVenueStats(String venueId) {
-        return rapidApi.fetch(String.format(VENUE_STATS, venueId), TTL_24_HOUR);
+        return rapidApi.fetch(String.format(VENUE_STATS, venueId), TTL_7_DAYS);
     }
 
     /* =========================================================
         NEWS
     ========================================================= */
-
     public String getNews() {
-        return rapidApi.fetch(NEWS, TTL_10_MIN);
+        return rapidApi.fetch(NEWS, TTL_24_HOUR);
     }
 
     public String getNewsDetails(String id) {
@@ -263,7 +290,6 @@ public class CricketService {
     /* =========================================================
         CRICAPI (Reference Data) - refresh daily
     ========================================================= */
-
     public void refreshDailyData() {
         log.info("🔄 Refreshing daily cricket reference data (CricAPI)...");
         try {
@@ -326,7 +352,6 @@ public class CricketService {
 
     /* =========================================================
         Utility: Safe JSON embedding
-        (Prevents invalid JSON if RapidAPI returns error string)
     ========================================================= */
     private String safeJson(String raw) {
         if (raw == null || raw.isBlank()) return "{}";
@@ -335,7 +360,7 @@ public class CricketService {
         if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
             return trimmed;
         }
-        // Wrap as object if not JSON
+
         return String.format("{\"raw\":\"%s\"}", trimmed.replace("\"", "\\\""));
     }
 }
