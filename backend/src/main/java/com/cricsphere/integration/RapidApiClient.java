@@ -1,6 +1,6 @@
 package com.cricsphere.integration;
 
-import lombok.Getter;
+import com.cricsphere.service.FirestoreCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -24,25 +24,25 @@ public class RapidApiClient {
     @Value("${rapidapi.key}")
     private String rapidApiKey;
 
-    /**
-     * Optional fallback host.
-     * If URL parsing fails, we use this.
-     */
     @Value("${rapidapi.host:}")
     private String rapidApiHost;
 
     private final RestTemplate restTemplate;
+    private final FirestoreCacheService firestoreCacheService;
 
     /* ===================== Quota ===================== */
     private static final int DAILY_LIMIT = 100;
     private LocalDate currentDay = LocalDate.now();
     private final AtomicInteger dailyCallCount = new AtomicInteger(0);
 
-    /* ===================== Cache ===================== */
-    private final Map<String, CachedResponse> cache = new ConcurrentHashMap<>();
+    /* ===================== Locks (anti stampede) ===================== */
     private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
-    public RapidApiClient(RestTemplateBuilder restTemplateBuilder) {
+    public RapidApiClient(RestTemplateBuilder restTemplateBuilder,
+                          FirestoreCacheService firestoreCacheService) {
+
+        this.firestoreCacheService = firestoreCacheService;
+
         this.restTemplate = restTemplateBuilder
                 .requestFactory(() -> {
                     SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -54,37 +54,36 @@ public class RapidApiClient {
     }
 
     /**
-     * Fetches data from RapidAPI with:
-     * - TTL caching
-     * - Quota guard (100/day)
-     * - Double-checked locking (anti stampede)
-     * - Stale fallback on failure
+     * Firestore-based caching + quota guard:
+     * - Firestore keeps cached data even if Render sleeps
+     * - If cache expired, only then call RapidAPI
+     * - If RapidAPI fails, serve stale Firestore cache
      */
     public String fetch(String url, long ttlMillis) {
         rotateDayIfNeeded();
 
         final String cacheKey = url;
 
-        // 1) Return cached response if valid
-        CachedResponse cached = cache.get(cacheKey);
-        if (cached != null && !cached.isExpired()) {
-            return cached.body;
+        // 1) Check Firestore cache
+        FirestoreCacheService.CacheEntry cached = firestoreCacheService.get(cacheKey);
+        if (cached != null && !firestoreCacheService.isExpired(cached)) {
+            return cached.getBody();
         }
 
         // 2) Prevent multiple threads calling same URL
         Object lock = locks.computeIfAbsent(cacheKey, k -> new Object());
 
         synchronized (lock) {
-            // Double-check after lock
-            cached = cache.get(cacheKey);
-            if (cached != null && !cached.isExpired()) {
-                return cached.body;
+            // Double-check cache after lock
+            cached = firestoreCacheService.get(cacheKey);
+            if (cached != null && !firestoreCacheService.isExpired(cached)) {
+                return cached.getBody();
             }
 
             // 3) Quota check
             if (dailyCallCount.get() >= DAILY_LIMIT) {
-                log.warn("🚨 RapidAPI quota limit hit ({}). Serving stale fallback for: {}", DAILY_LIMIT, url);
-                return (cached != null) ? cached.body : getQuotaErrorJson();
+                log.warn("🚨 RapidAPI quota limit hit ({}). Serving stale Firestore fallback for: {}", DAILY_LIMIT, url);
+                return (cached != null) ? cached.getBody() : getQuotaErrorJson();
             }
 
             // 4) Call API
@@ -93,17 +92,15 @@ public class RapidApiClient {
     }
 
     private String executeRequest(String url, String key, long ttlMillis) {
-        CachedResponse stale = cache.get(key);
+        // stale = last Firestore cache (even if expired)
+        FirestoreCacheService.CacheEntry stale = firestoreCacheService.get(key);
 
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("x-rapidapi-key", rapidApiKey);
 
-            // Auto detect host from URL (recommended)
             String host = extractHost(url);
-            if (host == null || host.isBlank()) {
-                host = rapidApiHost;
-            }
+            if (host == null || host.isBlank()) host = rapidApiHost;
 
             if (host != null && !host.isBlank()) {
                 headers.set("x-rapidapi-host", host);
@@ -123,22 +120,23 @@ public class RapidApiClient {
 
             if (body != null && !body.isBlank()) {
                 dailyCallCount.incrementAndGet();
-                cache.put(key, new CachedResponse(body, ttlMillis));
+
+                // Save to Firestore (persistent cache)
+                firestoreCacheService.set(key, body, ttlMillis);
+
                 return body;
             }
 
             log.warn("⚠️ Empty response body from RapidAPI: {}", url);
-            return (stale != null) ? stale.body : getErrorJson("Empty response from RapidAPI");
+            return (stale != null) ? stale.getBody() : getErrorJson("Empty response from RapidAPI");
 
         } catch (HttpStatusCodeException e) {
-            // This gives real RapidAPI error response JSON
             log.error("❌ RapidAPI HTTP Error {} | URL: {} | Body: {}",
                     e.getStatusCode(), url, e.getResponseBodyAsString());
 
-            // Serve stale if possible
             if (stale != null) {
-                log.warn("🔄 Serving stale cache fallback due to HTTP error for: {}", url);
-                return stale.body;
+                log.warn("🔄 Serving stale Firestore cache fallback due to HTTP error for: {}", url);
+                return stale.getBody();
             }
 
             return getErrorJson("RapidAPI error: " + e.getResponseBodyAsString());
@@ -147,8 +145,8 @@ public class RapidApiClient {
             log.error("❌ RapidAPI Request Failed | URL: {} | Reason: {}", url, e.getMessage());
 
             if (stale != null) {
-                log.warn("🔄 Serving stale cache fallback due to failure for: {}", url);
-                return stale.body;
+                log.warn("🔄 Serving stale Firestore cache fallback due to failure for: {}", url);
+                return stale.getBody();
             }
 
             return getErrorJson("API connection failed: " + e.getMessage());
@@ -180,20 +178,5 @@ public class RapidApiClient {
     private String getErrorJson(String msg) {
         msg = (msg == null) ? "Unknown error" : msg.replace("\"", "\\\"");
         return String.format("{\"error\":true,\"status\":500,\"message\":\"%s\"}", msg);
-    }
-
-    @Getter
-    private static class CachedResponse {
-        private final String body;
-        private final long expiresAt;
-
-        CachedResponse(String body, long ttl) {
-            this.body = body;
-            this.expiresAt = System.currentTimeMillis() + ttl;
-        }
-
-        boolean isExpired() {
-            return System.currentTimeMillis() > expiresAt;
-        }
     }
 }
