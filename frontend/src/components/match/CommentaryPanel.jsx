@@ -7,14 +7,43 @@ function safeArr(v) {
   return Array.isArray(v) ? v : [];
 }
 
-function getEventType(text = "") {
-  const t = text.toLowerCase();
+function safeText(v) {
+  return typeof v === "string" ? v : "";
+}
 
-  if (t.includes("six")) return "SIX";
-  if (t.includes("four")) return "FOUR";
-  if (t.includes("out") || t.includes("wicket")) return "WICKET";
-  if (t.includes("wide")) return "WIDE";
-  if (t.includes("no ball") || t.includes("noball")) return "NOBALL";
+function formatOver(v) {
+  if (typeof v === "number") return v.toFixed(1);
+  if (typeof v === "string") return v;
+  return "";
+}
+
+function formatTime(ts) {
+  if (!ts) return "";
+  const n = Number(ts);
+  if (!Number.isFinite(n)) return "";
+  try {
+    return new Date(n).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "";
+  }
+}
+
+function getEventType(item = {}) {
+  const t = safeText(item?.eventtype).toUpperCase();
+  if (t === "SIX") return "SIX";
+  if (t === "FOUR") return "FOUR";
+  if (t === "WICKET") return "WICKET";
+  if (t.includes("WIDE")) return "WIDE";
+  if (t.includes("NOBALL")) return "NOBALL";
+
+  // fallback using comm text
+  const text = safeText(item?.commtxt).toLowerCase();
+  if (text.includes("six")) return "SIX";
+  if (text.includes("four")) return "FOUR";
+  if (text.includes("out") || text.includes("wicket")) return "WICKET";
+  if (text.includes("wide")) return "WIDE";
+  if (text.includes("no ball") || text.includes("noball")) return "NOBALL";
+
   return "NORMAL";
 }
 
@@ -35,72 +64,46 @@ function badgeStyle(type) {
   }
 }
 
+function cleanCricbuzzTokens(text = "") {
+  // Removes tokens like B0$, B1$ that appear inside commtxt
+  return safeText(text).replace(/B\d+\$/g, "").replace(/\s+/g, " ").trim();
+}
+
 function normalizeCommentary(raw) {
-  /**
-   * We support multiple possible structures:
-   * raw.commentaryList
-   * raw.commLines
-   * raw.data.commentaryList
-   * raw?.commentary?.items
-   */
+  // ✅ Your exact structure: { inningsid, comwrapper: [ { commentary: {...} } ] }
+  const wrappers = safeArr(raw?.comwrapper);
 
-  const list =
-    raw?.commentaryList ||
-    raw?.commLines ||
-    raw?.commentary?.items ||
-    raw?.data?.commentaryList ||
-    raw?.data?.commLines ||
-    raw?.data?.commentary?.items ||
-    [];
-
-  const arr = safeArr(list);
-
-  // Convert to uniform shape
-  return arr
+  const items = wrappers
+    .map((w) => w?.commentary)
+    .filter(Boolean)
     .map((c, idx) => {
-      const over =
-        c?.overNumber ??
-        c?.o ??
-        c?.over ??
-        c?.ball ??
-        c?.ballNbr ??
-        "";
-
-      const comm =
-        c?.commText ||
-        c?.commentary ||
-        c?.text ||
-        c?.message ||
-        c?.eventText ||
-        "";
-
-      const timestamp =
-        c?.timestamp ||
-        c?.time ||
-        c?.ts ||
-        "";
+      const over = formatOver(c?.overnum);
+      const text = cleanCricbuzzTokens(c?.commtxt);
 
       return {
-        id: c?.id || c?.commId || `${idx}-${over}`,
+        id: `${c?.inningsid ?? "inn"}-${c?.ballnbr ?? idx}-${over}`,
         over,
-        text: comm,
-        ts: timestamp,
+        text,
+        ts: formatTime(c?.timestamp),
+        eventType: getEventType(c),
         raw: c,
       };
     })
-    .filter((x) => x.text && x.text.trim().length > 0);
+    .filter((x) => x.text.length > 0);
+
+  return items;
 }
 
 /* ---------------- UI Components ---------------- */
 
 const SectionCard = ({ children }) => (
-  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+  <div className="bg-white dark:bg-[#0b0f16] border border-black/10 dark:border-white/10 rounded-3xl shadow-sm overflow-hidden">
     {children}
   </div>
 );
 
 const Header = () => (
-  <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+  <div className="px-6 py-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
     <div className="flex items-center gap-3">
       <div className="p-2 rounded-xl bg-blue-500/10">
         <MessageSquare className="text-blue-500" size={18} />
@@ -122,8 +125,8 @@ const Header = () => (
 );
 
 const OverTag = ({ over }) => (
-  <div className="min-w-[54px] text-center">
-    <span className="inline-flex px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+  <div className="min-w-[58px] text-center">
+    <span className="inline-flex px-2 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.04] text-[10px] font-black text-slate-700 dark:text-slate-200 border border-black/10 dark:border-white/10">
       {over || "—"}
     </span>
   </div>
@@ -140,15 +143,13 @@ const EventBadge = ({ type }) => (
 );
 
 const CommentaryRow = ({ item }) => {
-  const type = getEventType(item.text);
-
   return (
-    <div className="flex gap-4 px-6 py-4 border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-white/5 transition">
+    <div className="flex gap-4 px-6 py-4 border-b border-black/5 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition">
       <OverTag over={item.over} />
 
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-3">
-          <EventBadge type={type} />
+          <EventBadge type={item.eventType} />
           {item.ts ? (
             <span className="text-[10px] font-semibold text-slate-400">
               {item.ts}
@@ -164,20 +165,17 @@ const CommentaryRow = ({ item }) => {
   );
 };
 
-export default function CommentaryPanel({ match }) {
+/**
+ * ✅ Use this like:
+ * <CommentaryPanel commentaryData={commentaryData} />
+ */
+export default function CommentaryPanel({ commentaryData }) {
   const commentary = useMemo(() => {
-    // Most APIs return commentary separately, but sometimes included inside match object
-    const raw =
-      match?.commentary ||
-      match?.matchCommentary ||
-      match?.commentaryData ||
-      match;
+    const items = normalizeCommentary(commentaryData);
 
-    const items = normalizeCommentary(raw);
-
-    // Latest first like Cricbuzz
+    // Cricbuzz style: latest first
     return items.reverse();
-  }, [match]);
+  }, [commentaryData]);
 
   if (!commentary || commentary.length === 0) {
     return (
@@ -186,12 +184,10 @@ export default function CommentaryPanel({ match }) {
         <div className="p-10 text-center">
           <AlertCircle className="mx-auto text-slate-300 mb-3" size={34} />
           <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
-            Commentary not available yet
+            Commentary not available
           </p>
           <p className="text-[11px] text-slate-500 mt-2 max-w-md mx-auto">
-            Your backend match endpoint currently returns only matchInfo +
-            matchScore.  
-            Next we’ll add a backend route to fetch full ball-by-ball commentary.
+            Commentary endpoint returned no items for this match.
           </p>
         </div>
       </SectionCard>
@@ -201,7 +197,6 @@ export default function CommentaryPanel({ match }) {
   return (
     <SectionCard>
       <Header />
-
       <div className="max-h-[70vh] overflow-y-auto">
         {commentary.map((c) => (
           <CommentaryRow key={c.id} item={c} />

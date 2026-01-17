@@ -5,8 +5,20 @@ export default function MatchHeader({ match }) {
 
   const info = match?.matchInfo || match;
 
-  const t1 = info?.team1?.teamName || info?.team1?.shortName || "Team 1";
-  const t2 = info?.team2?.teamName || info?.team2?.shortName || "Team 2";
+  const t1 =
+  info?.team1?.teamName ||
+  info?.team1?.teamname ||
+  info?.team1?.teamsname ||
+  info?.team1?.shortName ||
+  "Team 1";
+
+const t2 =
+  info?.team2?.teamName ||
+  info?.team2?.teamname ||
+  info?.team2?.teamsname ||
+  info?.team2?.shortName ||
+  "Team 2";
+
 
   const status = info?.status || match?.status || "Match in progress";
 

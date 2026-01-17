@@ -5,6 +5,7 @@ import useFetch from "../hooks/useFetch";
 import MatchHeader from "../components/match/MatchHeader";
 import LiveScore from "../components/match/LiveScore";
 import SquadsPanel from "../components/match/SquadsPanel";
+import CommentaryPanel from "../components/match/CommentaryPanel";
 
 import {
   Loader2,
@@ -35,27 +36,6 @@ function safeJsonParse(value) {
 function extractMatchCore(parsed) {
   if (!parsed) return null;
   return parsed?.data || parsed?.matchDetails || parsed?.matchInfo || parsed;
-}
-
-function extractCommentary(raw) {
-  if (!raw) return [];
-
-  const comm =
-    raw?.commentaryList ||
-    raw?.commLines ||
-    raw?.commentary ||
-    raw?.data?.commentaryList ||
-    raw?.data?.commLines ||
-    raw?.data?.commentary ||
-    [];
-
-  if (Array.isArray(comm)) return comm;
-
-  if (comm?.commentaryList && Array.isArray(comm.commentaryList)) {
-    return comm.commentaryList;
-  }
-
-  return [];
 }
 
 function extractScorecard(raw) {
@@ -89,15 +69,17 @@ export default function MatchPage() {
   }, [data]);
 
   const match = useMemo(() => extractMatchCore(parsedOverview), [parsedOverview]);
+
   const info = match?.matchInfo || match;
 
-  const team1Name = info?.team1?.teamName || "Team 1";
-  const team2Name = info?.team2?.teamName || "Team 2";
+  const team1Name = info?.team1?.teamName || info?.team1?.teamname || "Team 1";
+  const team2Name = info?.team2?.teamName || info?.team2?.teamname || "Team 2";
 
   // 2) Lazy tab data
   const [commentaryData, setCommentaryData] = useState(null);
   const [scorecardData, setScorecardData] = useState(null);
   const [squadsData, setSquadsData] = useState(null);
+  const [oversData, setOversData] = useState(null);
 
   const [tabLoading, setTabLoading] = useState(false);
 
@@ -106,7 +88,23 @@ export default function MatchPage() {
     setCommentaryData(null);
     setScorecardData(null);
     setSquadsData(null);
+    setOversData(null);
   }, [matchId]);
+
+  /* =========================
+     Loaders
+  ========================= */
+
+  const loadOvers = useCallback(async () => {
+    if (oversData) return;
+    try {
+      const res = await matchApi.getOvers(matchId);
+      setOversData(res.data || null);
+    } catch (e) {
+      console.error("Overs fetch failed:", e);
+      setOversData(null);
+    }
+  }, [matchId, oversData]);
 
   const loadCommentary = useCallback(async () => {
     if (commentaryData) return;
@@ -150,17 +148,17 @@ export default function MatchPage() {
     }
   }, [matchId, squadsData]);
 
+  // Always load overs (needed for LiveScore)
+  useEffect(() => {
+    loadOvers();
+  }, [loadOvers]);
+
   // Lazy load when tab changes
   useEffect(() => {
     if (activeTab === "commentary") loadCommentary();
     if (activeTab === "scorecard") loadScorecard();
     if (activeTab === "squads") loadSquads();
   }, [activeTab, loadCommentary, loadScorecard, loadSquads]);
-
-  const commentaryList = useMemo(
-    () => extractCommentary(commentaryData),
-    [commentaryData]
-  );
 
   const scorecard = useMemo(
     () => extractScorecard(scorecardData),
@@ -172,6 +170,10 @@ export default function MatchPage() {
     { id: "scorecard", label: "Scorecard", icon: ListChecks },
     { id: "squads", label: "Squads", icon: Users2 },
   ];
+
+  /* =========================
+     UI States
+  ========================= */
 
   if (loading) {
     return (
@@ -201,7 +203,9 @@ export default function MatchPage() {
       <div className="max-w-5xl mx-auto px-4 md:px-6 pt-6">
         {/* Header blocks */}
         <MatchHeader match={match} />
-        <LiveScore match={match} />
+
+        {/* IMPORTANT: LiveScore uses overs */}
+        <LiveScore match={match} overs={oversData} />
 
         {/* Tabs */}
         <div className="mt-6 mb-4 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0b0f16] p-1 shadow-sm">
@@ -245,57 +249,8 @@ export default function MatchPage() {
             {/* Commentary */}
             {activeTab === "commentary" && (
               <div className="space-y-4">
-                {commentaryList.length === 0 ? (
-                  <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0b0f16] p-8 text-center">
-                    <Info className="mx-auto text-slate-300 mb-3" size={32} />
-                    <p className="text-slate-700 dark:text-slate-300 text-sm font-semibold">
-                      Commentary not available yet
-                    </p>
-                    <p className="text-slate-500 text-[12px] mt-2">
-                      Match: {team1Name} vs {team2Name}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0b0f16] overflow-hidden">
-                    <div className="px-5 py-4 border-b border-black/10 dark:border-white/10">
-                      <h3 className="text-[12px] font-extrabold text-slate-500 uppercase tracking-widest">
-                        Ball-by-ball
-                      </h3>
-                    </div>
-
-                    <div className="divide-y divide-black/10 dark:divide-white/10">
-                      {commentaryList.slice(0, 30).map((c, idx) => {
-                        const over = c?.overNumber || c?.over || c?.ball || "•";
-                        const text =
-                          c?.commText ||
-                          c?.text ||
-                          c?.commentary ||
-                          "Update not available.";
-
-                        return (
-                          <div key={idx} className="px-5 py-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="min-w-0">
-                                <p className="text-[12px] font-extrabold text-slate-900 dark:text-white">
-                                  {over}
-                                </p>
-                                <p className="text-[12px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-                                  {text}
-                                </p>
-                              </div>
-
-                              {c?.event ? (
-                                <span className="shrink-0 text-[10px] font-extrabold uppercase tracking-wide px-2 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                                  {c.event}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                {/* Use the new CommentaryPanel */}
+                <CommentaryPanel commentaryData={commentaryData} />
               </div>
             )}
 
