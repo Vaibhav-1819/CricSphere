@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,7 +50,9 @@ public class FirestoreCacheService {
             data.put("expiresAt", expiresAt);
             data.put("updatedAt", Instant.now().toString());
 
-            db().collection(COLLECTION).document(toDocId(key)).set(data);
+            // ✅ IMPORTANT: wait until Firestore confirms write
+            db().collection(COLLECTION).document(toDocId(key)).set(data).get();
+
         } catch (Exception e) {
             log.warn("⚠️ Firestore cache write failed: {}", e.getMessage());
         }
@@ -58,9 +62,21 @@ public class FirestoreCacheService {
         return entry == null || System.currentTimeMillis() > entry.expiresAt;
     }
 
-    // Firestore doc IDs can't safely contain URLs, so hash it
+    // ✅ SHA-256 stable docId (no collisions)
     private String toDocId(String key) {
-        return Integer.toHexString(key.hashCode());
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(key.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (Exception e) {
+            // fallback
+            return Integer.toHexString(key.hashCode());
+        }
     }
 
     @Data
